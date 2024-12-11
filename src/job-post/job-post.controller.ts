@@ -10,6 +10,7 @@ import {
   Query,
   ParseIntPipe,
   ValidationPipe,
+  Request,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,29 +29,21 @@ import { Role, JobType, JobAvailability } from '../utils/constants/constants';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../user/entities/user.entity';
 import { JobPost } from './entities/job-post.entity';
+import { OptionalParseIntPipe } from '../utils/pipes/optional-parse-int.pipe';
 
 @ApiTags('job-posts')
+@ApiBearerAuth('JWT-auth')
 @Controller('job-posts')
-@ApiBearerAuth()
 export class JobPostController {
   constructor(private readonly jobPostService: JobPostService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Employer)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new job post' })
-  @ApiResponse({
-    status: 201,
-    description: 'Job post created successfully',
-    type: JobPost,
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Not an employer' })
-  create(
-    @Body(ValidationPipe) createJobPostDto: CreateJobPostDto,
-    @GetUser() user: User,
-  ) {
-    return this.jobPostService.create(createJobPostDto, user);
+  @ApiResponse({ status: 201, description: 'Job post created successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  create(@Body() createJobPostDto: CreateJobPostDto, @Request() req) {
+    return this.jobPostService.create(createJobPostDto, req.user);
   }
 
   @Get()
@@ -66,7 +59,7 @@ export class JobPostController {
   findAll(
     @Query('type') type?: JobType,
     @Query('availability') availability?: JobAvailability,
-    @Query('minSalary', ParseIntPipe) minSalary?: number,
+    @Query('minSalary', OptionalParseIntPipe) minSalary?: number,
   ) {
     return this.jobPostService.findAll({ type, availability, minSalary });
   }

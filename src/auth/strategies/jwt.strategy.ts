@@ -5,29 +5,28 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: process.env.JWT_SECRET || 'your_jwt_secret',
+      secretOrKey: configService.get<string>('JWT_SECRET'),
+      ignoreExpiration: false,
     });
   }
 
   async validate(payload: JwtPayload): Promise<User> {
-    const { userId, isEmailVerified } = payload;
+    const { userId } = payload;
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['employerProfile'], // Include this for employer checks
+      relations: ['employerProfile'],
     });
-
-    if (!isEmailVerified) {
-      throw new UnauthorizedException('Email not verified');
-    }
 
     if (!user) {
       throw new UnauthorizedException('User not found');

@@ -19,15 +19,8 @@ export const dataSourceOptions: DataSourceOptions = {
   entities: [Location, User, JobSeeker, Employer, JobPost, UserJob],
   migrations: ['dist/db/migrations/*{.ts,.js}'],
   synchronize: false,
-  logging: true,
+  logging: false,
 };
-
-console.log('Database Connection Config:', {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  username: process.env.DB_USERNAME,
-  database: process.env.DB_DATABASE,
-});
 
 const dataSource = new DataSource(dataSourceOptions);
 export default dataSource;
