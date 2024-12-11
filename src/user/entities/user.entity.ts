@@ -15,13 +15,12 @@ import {
   IsEnum,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Gender, Role } from 'src/utils/constants/constants';
-import { JobSeeker } from 'src/job-seeker/entities/job-seeker.entity';
-import { Employer } from 'src/employer/entities/employer.entity';
-// import { JobPost } from 'src/job-post/entities/job-post.entity';
-import { UserJob } from 'src/user-jobs/entities/user-job.entity';
-import { Location } from 'src/location/entities/location.entity';
-import { BaseEntity } from 'src/common/base/base.entity';
+import { Gender, Role } from '../../utils/constants/constants';
+import { JobSeeker } from '../../job-seeker/entities/job-seeker.entity';
+import { Employer } from '../../employer/entities/employer.entity';
+import { UserJob } from '../../user-jobs/entities/user-job.entity';
+import { Location } from '../../location/entities/location.entity';
+import { BaseEntity } from '../../common/base/base.entity';
 
 @Entity()
 @Index(['email', 'phoneNumber'], { unique: true })

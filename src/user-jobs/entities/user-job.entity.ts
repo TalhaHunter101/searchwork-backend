@@ -1,8 +1,8 @@
 import { Column, Entity, ManyToOne } from 'typeorm';
-import { User } from 'src/user/entities/user.entity';
-import { JobPost } from 'src/job-post/entities/job-post.entity';
-import { Status } from 'src/utils/constants/constants';
-import { BaseEntity } from 'src/common/base/base.entity';
+import { User } from '../../user/entities/user.entity';
+import { JobPost } from '../../job-post/entities/job-post.entity';
+import { Status } from '../../utils/constants/constants';
+import { BaseEntity } from '../../common/base/base.entity';
 
 @Entity()
 export class UserJob extends BaseEntity {

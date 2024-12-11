@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { User } from 'src/user/entities/user.entity';
+import { User } from '../../user/entities/user.entity';
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
-import { BaseEntity } from 'src/common/base/base.entity';
+import { BaseEntity } from '../../common/base/base.entity';
 
 @Entity()
 export class JobSeeker extends BaseEntity {

@@ -1,41 +1,42 @@
 export enum Role {
-  Employee = 'Employee',
-  Employer = 'Employer',
+  Employee = 'employee',
+  Employer = 'employer',
 }
 
 export enum Gender {
-  Male = 'Male',
-  Female = 'Female',
-  Other = 'Other',
+  Male = 'male',
+  Female = 'female',
+  Other = 'other',
 }
+
 export enum Status {
-  Hiring = 'Hiring',
-  Hired = 'Hired',
-  Closed = 'Closed',
-  UnderReview = 'Under-Review',
-  Applied = 'Applied',
+  Applied = 'applied',
+  Hiring = 'hiring',
+  Rejected = 'rejected',
+  Accepted = 'accepted',
 }
 
 export enum JobType {
-  FullTime = 'Full time',
-  PartTime = 'Part time',
-  Other = 'Other',
-}
-
-export enum ExperienceLevel {
-  Beginner = 'Beginner',
-  Intermediate = 'Intermediate',
-  Expert = 'Expert',
+  FullTime = 'full_time',
+  PartTime = 'part_time',
+  Contract = 'contract',
+  Freelance = 'freelance',
 }
 
 export enum JobDuration {
-  ShortTermContract = 'Short Term Contract',
-  Permanent = 'Permanent',
-  OneTime = 'One Time',
+  Temporary = 'temporary',
+  Permanent = 'permanent',
 }
 
 export enum JobAvailability {
-  OnSite = 'On-site',
-  Remote = 'Remote',
-  Hybrid = 'Hybrid',
+  Remote = 'remote',
+  OnSite = 'on_site',
+  Hybrid = 'hybrid',
+}
+
+export enum ExperienceLevel {
+  Entry = 'entry',
+  Intermediate = 'intermediate',
+  Senior = 'senior',
+  Expert = 'expert',
 }

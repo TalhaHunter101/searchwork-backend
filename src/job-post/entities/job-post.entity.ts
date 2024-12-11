@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { UserJob } from 'src/user-jobs/entities/user-job.entity';
-import { Employer } from 'src/employer/entities/employer.entity';
+import { UserJob } from '../../user-jobs/entities/user-job.entity';
+import { Employer } from '../../employer/entities/employer.entity';
 import {
   ExperienceLevel,
   JobAvailability,
   JobDuration,
   JobType,
   Status,
-} from 'src/utils/constants/constants';
+} from '../../utils/constants/constants';
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
-import { BaseEntity } from 'src/common/base/base.entity';
-import { Location } from 'src/location/entities/location.entity';
+import { BaseEntity } from '../../common/base/base.entity';
+import { Location } from '../../location/entities/location.entity';
 
 @Entity()
 export class JobPost extends BaseEntity {

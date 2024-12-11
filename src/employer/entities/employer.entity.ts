@@ -1,8 +1,8 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from 'src/user/entities/user.entity';
-import { JobPost } from 'src/job-post/entities/job-post.entity';
-import { BaseEntity } from 'src/common/base/base.entity';
+import { User } from '../../user/entities/user.entity';
+import { JobPost } from '../../job-post/entities/job-post.entity';
+import { BaseEntity } from '../../common/base/base.entity';
 
 @Entity()
 export class Employer extends BaseEntity {
