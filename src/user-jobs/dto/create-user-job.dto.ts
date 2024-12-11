@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty } from 'class-validator';
-import { Status } from 'src/utils/constants/constants';
+import { Status } from '../../utils/constants/constants';
 
 export class CreateUserJobDto {
   @ApiProperty()

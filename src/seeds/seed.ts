@@ -5,7 +5,13 @@ import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 import { Employer } from '../employer/entities/employer.entity';
 import { UserJob } from '../user-jobs/entities/user-job.entity';
 import { JobPost } from '../job-post/entities/job-post.entity';
-import { Gender, Role } from '../utils/constants/constants';
+import {
+  Gender,
+  Role,
+  JobType,
+  JobAvailability,
+  Status,
+} from '../utils/constants/constants';
 import { Point } from 'geojson';
 import { dataSourceOptions } from '../../db/data-source';
 
@@ -18,6 +24,8 @@ const seedData = async (dataSource: DataSource) => {
   const locationRepository = dataSource.getRepository(Location);
   const jobSeekerRepository = dataSource.getRepository(JobSeeker);
   const employerRepository = dataSource.getRepository(Employer);
+  const jobPostRepository = dataSource.getRepository(JobPost);
+  const userJobRepository = dataSource.getRepository(UserJob);
 
   console.log('Creating location data...');
   // Create some locations
@@ -143,6 +151,69 @@ const seedData = async (dataSource: DataSource) => {
   console.log('Saving employers...');
   await employerRepository.save(employers);
   console.log('Employers saved successfully');
+
+  console.log('Creating job posts...');
+  // Create Job Posts
+  const jobPosts = [
+    {
+      title: 'Senior JavaScript Developer',
+      type: JobType.FullTime,
+      description: 'Looking for an experienced JavaScript developer',
+      requirements: 'Min 5 years experience with modern JavaScript',
+      salary: 120000,
+      availability: JobAvailability.Remote,
+      location: savedLocations[0], // New York location
+      employer: employers[0], // Tech Corp
+    },
+    {
+      title: 'Data Scientist',
+      type: JobType.FullTime,
+      description: 'Seeking a data scientist for ML projects',
+      requirements: 'Masters in Data Science or related field',
+      salary: 130000,
+      availability: JobAvailability.Hybrid,
+      location: savedLocations[1], // LA location
+      employer: employers[0], // Tech Corp
+    },
+    {
+      title: 'Frontend Developer',
+      type: JobType.PartTime,
+      description: 'Frontend developer needed for UI/UX projects',
+      requirements: '3+ years of React experience',
+      salary: 80000,
+      availability: JobAvailability.OnSite,
+      location: savedLocations[2], // Chicago location
+      employer: employers[0], // Tech Corp
+    },
+  ];
+
+  console.log('Saving job posts...');
+  const savedJobPosts = await jobPostRepository.save(jobPosts);
+  console.log('Job posts saved:', savedJobPosts.length);
+
+  console.log('Creating user jobs (applications)...');
+  // Create User Jobs (applications)
+  const userJobs = [
+    {
+      user: savedUsers[0], // John Doe
+      jobPost: savedJobPosts[0], // Senior JavaScript Developer position
+      status: Status.Applied,
+    },
+    {
+      user: savedUsers[0], // John Doe
+      jobPost: savedJobPosts[2], // Frontend Developer position
+      status: Status.Accepted,
+    },
+    {
+      user: savedUsers[2], // Alex Johnson
+      jobPost: savedJobPosts[1], // Data Scientist position
+      status: Status.Applied,
+    },
+  ];
+
+  console.log('Saving user jobs...');
+  await userJobRepository.save(userJobs);
+  console.log('User jobs saved successfully');
 
   console.log('Seeding completed successfully!');
 };

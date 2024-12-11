@@ -1,7 +1,8 @@
-import { Entity, Column, Point } from 'typeorm';
+import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../common/base/base.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { Point } from 'geojson';
 
 @Entity()
 export class Location extends BaseEntity {
@@ -23,9 +24,13 @@ export class Location extends BaseEntity {
   @Column()
   address: string;
 
-  @ApiProperty({ example: 'POINT(123.456 78.901)' })
-  @IsNotEmpty()
-  @Column({ type: 'geography', spatialFeatureType: 'Point', srid: 4326 })
+  @Index({ spatial: true })
+  @Column({
+    type: 'geometry',
+    spatialFeatureType: 'Point',
+    srid: 4326,
+    nullable: true,
+  })
   point: Point;
 
   @ApiProperty({ example: '12345' })
