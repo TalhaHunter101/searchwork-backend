@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../user/entities/user.entity';
 import { MailService } from '../services/mailService';
-import { RegisterDto, LoginDto, ResetPasswordDto } from './dto/create-user.dto';
+import { RegisterDto, LoginDto, ResetPasswordDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +17,8 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<User> {
-    const { email, password, fullName, role } = registerDto;
+    const { email, password, fullName, role, phoneNumber, gender } =
+      registerDto;
 
     const existingUser = await this.userRepository.findOneBy({ email });
     if (existingUser) {
@@ -31,6 +32,8 @@ export class AuthService {
       fullName,
       password: hashedPassword,
       role,
+      phoneNumber,
+      gender,
     });
 
     await this.userRepository.save(user);

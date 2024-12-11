@@ -41,4 +41,4 @@ export class UserJobsController {
   remove(@Param('id') id: string) {
     return this.userJobsService.remove(+id);
   }
-} 
+}

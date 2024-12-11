@@ -13,6 +13,7 @@ import {
   IsPhoneNumber,
   IsOptional,
   IsEnum,
+  IsEmail,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Gender, Role } from '../../utils/constants/constants';
@@ -25,23 +26,22 @@ import { BaseEntity } from '../../common/base/base.entity';
 @Entity()
 @Index(['email', 'phoneNumber'], { unique: true })
 export class User extends BaseEntity {
-  @ApiProperty({ example: '+971123456789' })
+  @ApiProperty({ example: '+1234567890' })
   @IsNotEmpty()
-  @IsString()
-  @IsPhoneNumber(null)
-  @Column({ nullable: false })
+  @IsPhoneNumber()
+  @Column({ nullable: false, unique: true })
   phoneNumber: string;
 
   @ApiProperty({ example: 'John Doe' })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   fullName: string;
 
   @ApiProperty({ example: 'user@example.com' })
   @IsNotEmpty()
-  @IsString()
-  @Column({ nullable: false })
+  @IsEmail()
+  @Column({ nullable: false, unique: true })
   email: string;
 
   @ApiProperty({ example: 'password123' })
