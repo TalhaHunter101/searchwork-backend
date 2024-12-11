@@ -6,17 +6,19 @@ import { UpdateUserProfile } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
-  @InjectRepository(User) private userRepository: Repository<User>
+  @InjectRepository(User) private userRepository: Repository<User>;
 
   async create(body: UpdateUserProfile): Promise<User> {
-    const user= await this.userRepository.save(this.userRepository.create(body)).catch((err: any) => {
-      throw new HttpException(
-        {
-          message: `${err}`,
-        },
-        HttpStatus.CONFLICT,
-      );
-    });
+    const user = await this.userRepository
+      .save(this.userRepository.create(body))
+      .catch((err: any) => {
+        throw new HttpException(
+          {
+            message: `${err}`,
+          },
+          HttpStatus.CONFLICT,
+        );
+      });
     return user;
   }
 
@@ -33,15 +35,18 @@ export class UserService {
   }
 
   async update(id: number, updateUserDto: UpdateUserProfile) {
-    const user= await this.userRepository.save(this.userRepository.create(updateUserDto)).catch((err: any) => {
-      throw new HttpException(
-        {
-          message: `${err}`,
-        },
-        HttpStatus.CONFLICT,
-      );
-    });
-    return user;  }
+    const user = await this.userRepository
+      .save(this.userRepository.create(updateUserDto))
+      .catch((err: any) => {
+        throw new HttpException(
+          {
+            message: `${err}`,
+          },
+          HttpStatus.CONFLICT,
+        );
+      });
+    return user;
+  }
 
   remove(id: number) {
     return `This action removes a #${id} user`;
@@ -52,7 +57,7 @@ export class UserService {
       where: {
         email,
       },
-    })
+    });
 
     if (user) {
       return user;

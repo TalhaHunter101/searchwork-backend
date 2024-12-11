@@ -1,28 +1,29 @@
 import {
   Entity,
   Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   OneToOne,
   JoinColumn,
   OneToMany,
   Index,
 } from 'typeorm';
-import { IsString, IsNotEmpty, IsPhoneNumber, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsPhoneNumber,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Gender, Role } from 'src/utils/constants/constants';
 import { JobSeeker } from 'src/job-seeker/entities/job-seeker.entity';
 import { Employer } from 'src/employer/entities/employer.entity';
-import { JobPost } from 'src/job-post/entities/job-post.entity';
+// import { JobPost } from 'src/job-post/entities/job-post.entity';
 import { AppliedJob } from 'src/applied-jobs/entities/applied-job.entity';
+import { BaseEntity } from 'src/common/base/base.entity';
 
 @Entity()
 @Index(['email', 'phoneNumber'], { unique: true })
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class User extends BaseEntity {
   @ApiProperty({ example: '+971123456789' })
   @IsNotEmpty()
   @IsString()
@@ -30,7 +31,7 @@ export class User {
   @Column({ nullable: false })
   phoneNumber: string;
 
-  @ApiProperty({ example: 'Talha Shabbir' })
+  @ApiProperty({ example: 'John Doe' })
   @IsOptional()
   @IsString()
   @Column({ nullable: true })
@@ -61,6 +62,13 @@ export class User {
   @Column({ default: false })
   isEmailVerified: boolean;
 
+  @ApiProperty({ example: '123456' })
+  @IsOptional()
+  @IsString()
+  @Column({ nullable: true })
+  otp: string;
+
+  // table relations
   @OneToOne(() => JobSeeker, (jobSeeker) => jobSeeker.user, { cascade: true })
   @JoinColumn()
   jobSeekerProfile: JobSeeker;
@@ -71,11 +79,4 @@ export class User {
 
   @OneToMany(() => AppliedJob, (appliedJob) => appliedJob.user)
   appliedJobs: AppliedJob[];
-
-
-  @CreateDateColumn()
-  public createdAt: Date;
-
-  @UpdateDateColumn()
-  public updatedAt: Date;
 }

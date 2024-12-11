@@ -8,10 +8,10 @@ import { MailService } from 'src/services/mailService';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]), 
+    TypeOrmModule.forFeature([User]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_secret_key',
-      signOptions: { expiresIn: '1h' }, 
+      signOptions: { expiresIn: '1h' },
     }),
   ],
   controllers: [AuthController],

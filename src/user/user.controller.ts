@@ -1,6 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserService } from './user.service';
-import {  UpdateUserProfile } from './dto/update-user.dto';
+import { UpdateUserProfile } from './dto/update-user.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 
@@ -12,7 +21,11 @@ export class UserController {
     description: 'A successful hit can update user object',
     summary: 'Update User Profile',
   })
-  @ApiResponse({ status: 201, description: ' Successfully Updated User Profile.', type: User })
+  @ApiResponse({
+    status: 201,
+    description: ' Successfully Updated User Profile.',
+    type: User,
+  })
   @Patch('/update-profile')
   async updateUserProfile(@Body() body: UpdateUserProfile): Promise<User> {
     try {
@@ -30,7 +43,11 @@ export class UserController {
     description: 'A successful hit can return All users',
     summary: 'Get All Users',
   })
-  @ApiResponse({ status: 201, description: ' Users data successfully fetched.', type: User })
+  @ApiResponse({
+    status: 201,
+    description: ' Users data successfully fetched.',
+    type: User,
+  })
   @Get()
   findAll() {
     return this.userService.findAll();

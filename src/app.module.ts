@@ -1,5 +1,3 @@
-
-
 import { Logger, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -7,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from 'db/data-source';
 import { UserModule } from './user/user.module';
-import { User } from './user/entities/user.entity';
 import { AuthModule } from './user/auth.module';
 import { JobPostModule } from './job-post/job-post.module';
 import { JobSeekerModule } from './job-seeker/job-seeker.module';
@@ -27,7 +24,7 @@ import { EmployerModule } from './employer/employer.module';
     JobPostModule,
     JobSeekerModule,
     AppliedJobsModule,
-    EmployerModule,    
+    EmployerModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: Logger }],
 })

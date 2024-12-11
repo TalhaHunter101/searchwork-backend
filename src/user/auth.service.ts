@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../user/entities/user.entity';
 import { MailService } from 'src/services/mailService';
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto/create-user.dto'
+import { RegisterDto, LoginDto, ResetPasswordDto } from './dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +17,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<User> {
-    const { email, password, fullName, role} = registerDto;
+    const { email, password, fullName, role } = registerDto;
 
     const existingUser = await this.userRepository.findOneBy({ email });
     if (existingUser) {
@@ -29,9 +29,9 @@ export class AuthService {
     const user = this.userRepository.create({
       email,
       fullName,
-      password:hashedPassword,
+      password: hashedPassword,
       role,
-    });    
+    });
 
     await this.userRepository.save(user);
     await this.sendVerificationOtp(user.email);
@@ -47,14 +47,14 @@ export class AuthService {
 
   async validateUser(loginDto: LoginDto): Promise<User | null> {
     const user = await this.userRepository.findOneBy({ email: loginDto.email });
-    if (user && await bcrypt.compare(loginDto.password, user.password)) {
+    if (user && (await bcrypt.compare(loginDto.password, user.password))) {
       return user;
     }
     return null;
   }
 
   async login(user: User) {
-    const payload = { userId: user.uuid, role: user.role };
+    const payload = { userId: user.id, role: user.role };
     return { accessToken: this.jwtService.sign(payload) };
   }
 
