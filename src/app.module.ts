@@ -8,8 +8,9 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './user/auth.module';
 import { JobPostModule } from './job-post/job-post.module';
 import { JobSeekerModule } from './job-seeker/job-seeker.module';
-import { AppliedJobsModule } from './applied-jobs/applied-jobs.module';
 import { EmployerModule } from './employer/employer.module';
+import { UserJobsModule } from './user-jobs/user-jobs.module';
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -23,8 +24,9 @@ import { EmployerModule } from './employer/employer.module';
     TypeOrmModule.forRoot(dataSourceOptions),
     JobPostModule,
     JobSeekerModule,
-    AppliedJobsModule,
     EmployerModule,
+    UserJobsModule,
+    LocationModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: Logger }],
 })

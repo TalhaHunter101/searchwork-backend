@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { AppliedJob } from 'src/applied-jobs/entities/applied-job.entity';
+import { UserJob } from 'src/user-jobs/entities/user-job.entity';
 import { Employer } from 'src/employer/entities/employer.entity';
 import {
   ExperienceLevel,
@@ -9,8 +9,9 @@ import {
   JobType,
   Status,
 } from 'src/utils/constants/constants';
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from 'src/common/base/base.entity';
+import { Location } from 'src/location/entities/location.entity';
 
 @Entity()
 export class JobPost extends BaseEntity {
@@ -44,14 +45,10 @@ export class JobPost extends BaseEntity {
   @Column({ nullable: true })
   requirements: string;
 
-  @ApiProperty({
-    example: 'Houston, USA',
-    description: 'Provide location for the job you are posting',
-  })
   @IsOptional()
-  @IsString()
+  @IsNumber()
   @Column({ nullable: true })
-  location: string;
+  locationId: number;
 
   @ApiProperty({
     example: '10$ per hour',
@@ -92,11 +89,19 @@ export class JobPost extends BaseEntity {
   @Column({ type: 'enum', enum: Status, default: Status.Hiring })
   status: Status;
 
+  // Table relations
+
   @ManyToOne(() => Employer, (employer) => employer.jobPosts, {
     onDelete: 'CASCADE',
   })
   employer: Employer;
 
-  @OneToMany(() => AppliedJob, (appliedJob) => appliedJob.jobPost)
-  appliedJobs: AppliedJob[];
+  @ManyToOne(() => Location, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'location_id' })
+  location: Location;
+
+  @OneToMany(() => UserJob, (userJob) => userJob.jobPost, {
+    onDelete: 'CASCADE',
+  })
+  userJobs: UserJob[];
 }

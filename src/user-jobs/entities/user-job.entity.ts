@@ -5,22 +5,19 @@ import { Status } from 'src/utils/constants/constants';
 import { BaseEntity } from 'src/common/base/base.entity';
 
 @Entity()
-export class AppliedJob extends BaseEntity {
-  // Reference to the job post being applied for
-  @ManyToOne(() => JobPost, (jobPost) => jobPost.appliedJobs, {
+export class UserJob extends BaseEntity {
+  @ManyToOne(() => JobPost, (jobPost) => jobPost.userJobs, {
     onDelete: 'CASCADE',
     nullable: false,
   })
   jobPost: JobPost;
 
-  // Reference to the user (candidate) who applied for the job
-  @ManyToOne(() => User, (user) => user.appliedJobs, {
+  @ManyToOne(() => User, (user) => user.userJobs, {
     onDelete: 'CASCADE',
     nullable: false,
   })
   user: User;
 
-  // Status of the job application
   @Column({ type: 'enum', enum: Status, default: Status.Applied })
   status: Status;
 }

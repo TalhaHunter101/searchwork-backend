@@ -5,6 +5,7 @@ import {
   JoinColumn,
   OneToMany,
   Index,
+  ManyToOne,
 } from 'typeorm';
 import {
   IsString,
@@ -18,7 +19,8 @@ import { Gender, Role } from 'src/utils/constants/constants';
 import { JobSeeker } from 'src/job-seeker/entities/job-seeker.entity';
 import { Employer } from 'src/employer/entities/employer.entity';
 // import { JobPost } from 'src/job-post/entities/job-post.entity';
-import { AppliedJob } from 'src/applied-jobs/entities/applied-job.entity';
+import { UserJob } from 'src/user-jobs/entities/user-job.entity';
+import { Location } from 'src/location/entities/location.entity';
 import { BaseEntity } from 'src/common/base/base.entity';
 
 @Entity()
@@ -69,14 +71,18 @@ export class User extends BaseEntity {
   otp: string;
 
   // table relations
-  @OneToOne(() => JobSeeker, (jobSeeker) => jobSeeker.user, { cascade: true })
+  @OneToOne(() => JobSeeker, (jobSeeker) => jobSeeker.user)
   @JoinColumn()
   jobSeekerProfile: JobSeeker;
 
-  @OneToOne(() => Employer, (employer) => employer.user, { cascade: true })
+  @OneToOne(() => Employer, (employer) => employer.user)
   @JoinColumn()
   employerProfile: Employer;
 
-  @OneToMany(() => AppliedJob, (appliedJob) => appliedJob.user)
-  appliedJobs: AppliedJob[];
+  @ManyToOne(() => Location)
+  @JoinColumn()
+  location: Location;
+
+  @OneToMany(() => UserJob, (userJob) => userJob.user)
+  userJobs: UserJob[];
 }

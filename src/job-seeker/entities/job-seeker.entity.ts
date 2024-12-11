@@ -1,11 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { User } from 'src/user/entities/user.entity';
-import { Column, Entity, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { BaseEntity } from 'src/common/base/base.entity';
 
 @Entity()
 export class JobSeeker extends BaseEntity {
+  @ApiProperty({
+    example: '1',
+    description: 'User ID',
+  })
+  @Column({ nullable: false })
+  userId: number;
+
   @ApiProperty({
     example: 'Software Engineer',
     description: 'Please enter your skills',
@@ -58,5 +65,6 @@ export class JobSeeker extends BaseEntity {
   certificatesData: string;
 
   @OneToOne(() => User, (user) => user.jobSeekerProfile)
+  @JoinColumn({ name: 'user_id' })
   user: User;
 }

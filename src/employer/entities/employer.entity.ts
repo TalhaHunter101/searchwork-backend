@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
 import { JobPost } from 'src/job-post/entities/job-post.entity';
@@ -6,8 +6,12 @@ import { BaseEntity } from 'src/common/base/base.entity';
 
 @Entity()
 export class Employer extends BaseEntity {
-  @OneToOne(() => User, (user) => user.employerProfile, { cascade: true })
-  user: User;
+  @ApiProperty({
+    example: '1',
+    description: 'User ID',
+  })
+  @Column({ nullable: false })
+  userId: number;
 
   @ApiProperty({
     example: 'Hegemonic Inc.',
@@ -34,8 +38,13 @@ export class Employer extends BaseEntity {
   @Column({ nullable: true })
   registrationNumber: string;
 
+  // Table relations
   @OneToMany(() => JobPost, (jobPost) => jobPost.employer, {
     onDelete: 'CASCADE',
   })
   jobPosts: JobPost[];
+
+  @OneToOne(() => User, (user) => user.employerProfile, { cascade: true })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 }

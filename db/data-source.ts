@@ -1,9 +1,9 @@
-import { DataSource, DataSourceOptions } from "typeorm";
+import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
-dotenv.config()
+dotenv.config();
 
 export const dataSourceOptions: DataSourceOptions = {
-  type: 'mysql',
+  type: 'postgres',
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
   username: process.env.DB_USERNAME,
@@ -11,8 +11,15 @@ export const dataSourceOptions: DataSourceOptions = {
   database: process.env.DB_DATABASE,
   entities: ['dist/**/*.entity{.js,.ts}'],
   migrations: ['dist/db/migrations/*{.js,.ts}'],
-  synchronize: false
-}
-console.log('DB_HOST', process.env.DB_HOST, process.env.DB_PORT, process.env.DB_USERNAME, process.env.DB_PASSWORD, process.env.DB_DATABASE)
+  synchronize: false,
+};
+console.log(
+  'DB_HOST',
+  process.env.DB_HOST,
+  process.env.DB_PORT,
+  process.env.DB_USERNAME,
+  process.env.DB_PASSWORD,
+  process.env.DB_DATABASE,
+);
 const dataSource = new DataSource(dataSourceOptions);
 export default dataSource;
