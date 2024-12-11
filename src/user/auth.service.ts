@@ -40,7 +40,7 @@ export class AuthService {
   }
 
   async sendVerificationOtp(email: string) {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
     await this.userRepository.update({ email }, { otp });
     await this.mailService.sendVerificationEmail(email, otp);
   }
@@ -54,7 +54,7 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { userId: user.id, role: user.role };
+    const payload = { userId: user.uuid, role: user.role };
     return { accessToken: this.jwtService.sign(payload) };
   }
 

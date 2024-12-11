@@ -2,15 +2,14 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserProfile } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
   @InjectRepository(User) private userRepository: Repository<User>
 
-  async create(body: CreateUserDto): Promise<User> {
-    const consumer= await this.userRepository.save(this.userRepository.create(body)).catch((err: any) => {
+  async create(body: UpdateUserProfile): Promise<User> {
+    const user= await this.userRepository.save(this.userRepository.create(body)).catch((err: any) => {
       throw new HttpException(
         {
           message: `${err}`,
@@ -18,7 +17,7 @@ export class UserService {
         HttpStatus.CONFLICT,
       );
     });
-    return consumer;
+    return user;
   }
 
   findAll(): Promise<User[]> {
@@ -30,26 +29,33 @@ export class UserService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} consumer`;
+    return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateConsumerDto: UpdateUserDto) {
-    return `This action updates a #${id} consumer`;
-  }
+  async update(id: number, updateUserDto: UpdateUserProfile) {
+    const user= await this.userRepository.save(this.userRepository.create(updateUserDto)).catch((err: any) => {
+      throw new HttpException(
+        {
+          message: `${err}`,
+        },
+        HttpStatus.CONFLICT,
+      );
+    });
+    return user;  }
 
   remove(id: number) {
-    return `This action removes a #${id} consumer`;
+    return `This action removes a #${id} user`;
   }
 
-  async findOneByPhoneNumber(phoneNumber: string): Promise<User | null> {
-    const consumer = await this.userRepository.findOne({
+  async findOneByEmail(email: string): Promise<User | null> {
+    const user = await this.userRepository.findOne({
       where: {
-        phoneNumber,
+        email,
       },
     })
 
-    if (consumer) {
-      return consumer;
+    if (user) {
+      return user;
     }
 
     return null;

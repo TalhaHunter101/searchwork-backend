@@ -9,6 +9,10 @@ import { dataSourceOptions } from 'db/data-source';
 import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
 import { AuthModule } from './user/auth.module';
+import { JobPostModule } from './job-post/job-post.module';
+import { JobSeekerModule } from './job-seeker/job-seeker.module';
+import { AppliedJobsModule } from './applied-jobs/applied-jobs.module';
+import { EmployerModule } from './employer/employer.module';
 
 @Module({
   imports: [
@@ -17,9 +21,13 @@ import { AuthModule } from './user/auth.module';
       isGlobal: true,
       envFilePath: ['.env'],
     }),
-    UserModule,
     AuthModule,
-    TypeOrmModule.forRoot(dataSourceOptions),    
+    UserModule,
+    TypeOrmModule.forRoot(dataSourceOptions),
+    JobPostModule,
+    JobSeekerModule,
+    AppliedJobsModule,
+    EmployerModule,    
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: Logger }],
 })

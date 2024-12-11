@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {  UpdateUserProfile } from './dto/update-user.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 
@@ -10,18 +9,18 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @ApiOperation({
-    description: 'A successful hit can return user object',
-    summary: 'Register User',
+    description: 'A successful hit can update user object',
+    summary: 'Update User Profile',
   })
-  @ApiResponse({ status: 201, description: ' Successfully created user.', type: User })
-  @Post('/register')
-  async create(@Body() body: CreateUserDto): Promise<User> {
+  @ApiResponse({ status: 201, description: ' Successfully Updated User Profile.', type: User })
+  @Patch('/update-profile')
+  async updateUserProfile(@Body() body: UpdateUserProfile): Promise<User> {
     try {
-      const consumer = await this.userService.findOneByPhoneNumber(body.phoneNumber);
-      if (!consumer) {
+      const user = await this.userService.findOneByEmail(body.email);
+      if (user) {
         return this.userService.create(body);
       }
-      return consumer;
+      return user;
     } catch (e) {
       throw new BadRequestException(e.message);
     }
@@ -43,8 +42,8 @@ export class UserController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateConsumerDto: UpdateUserDto) {
-    return this.userService.update(+id, updateConsumerDto);
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserProfile) {
+    return this.userService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
