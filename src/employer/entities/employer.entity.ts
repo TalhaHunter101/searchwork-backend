@@ -6,12 +6,6 @@ import { BaseEntity } from '../../common/base/base.entity';
 
 @Entity()
 export class Employer extends BaseEntity {
-  @ApiProperty({
-    example: '1',
-    description: 'User ID',
-  })
-  @Column({ nullable: false })
-  userId: number;
 
   @ApiProperty({
     example: 'Hegemonic Inc.',

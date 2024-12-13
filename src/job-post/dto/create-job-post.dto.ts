@@ -4,6 +4,14 @@ import { JobType, JobAvailability, ExperienceLevel, JobDuration, Status } from '
 
 export class CreateJobPostDto {
   @ApiProperty({
+    example: 1,
+    description: 'Enter Employer id',
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  employerId: number;
+
+  @ApiProperty({
     example: 'Senior Software Engineer',
     description: 'Job title',
   })

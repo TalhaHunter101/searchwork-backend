@@ -43,7 +43,7 @@ export class JobPostController {
   @ApiResponse({ status: 201, description: 'Job post created successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   create(@Body() createJobPostDto: CreateJobPostDto, @Request() req) {
-    return this.jobPostService.create(createJobPostDto, req.user);
+    return this.jobPostService.create(createJobPostDto, req.user.id);
   }
 
   @Get()

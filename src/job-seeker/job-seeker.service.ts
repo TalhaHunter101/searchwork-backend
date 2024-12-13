@@ -1,26 +1,65 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { JobSeeker } from './entities/job-seeker.entity';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
 import { UpdateJobSeekerDto } from './dto/update-job-seeker.dto';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class JobSeekerService {
-  create(createJobSeekerDto: CreateJobSeekerDto) {
-    return 'This action adds a new jobSeeker';
+  constructor(
+    @InjectRepository(JobSeeker)
+    private readonly jobSeekerRepository: Repository<JobSeeker>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async create(userId: number, createJobSeekerDto: CreateJobSeekerDto): Promise<JobSeeker> {
+    // Find user by userId passed as a route parameter
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Create new JobSeeker using the provided data
+    const newJobSeeker = this.jobSeekerRepository.create({
+      ...createJobSeekerDto,
+      user, // Associate the user with the job seeker
+    });
+
+    return await this.jobSeekerRepository.save(newJobSeeker);
   }
 
-  findAll() {
-    return `This action returns all jobSeeker`;
+  async findAll(): Promise<JobSeeker[]> {
+    return await this.jobSeekerRepository.find({ relations: ['user'] });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} jobSeeker`;
+  async findOne(id: number): Promise<JobSeeker> {
+    return await this.jobSeekerRepository.findOne({ where: { id }, relations: ['user'] });
   }
 
-  update(id: number, updateJobSeekerDto: UpdateJobSeekerDto) {
-    return `This action updates a #${id} jobSeeker`;
+  async update(
+    id: number,
+    updateJobSeekerDto: UpdateJobSeekerDto,
+  ): Promise<JobSeeker> {
+    const jobSeeker = await this.jobSeekerRepository.findOne({ where: { id } });
+    if (!jobSeeker) {
+      throw new Error('JobSeeker not found');
+    }
+    Object.assign(jobSeeker, updateJobSeekerDto);
+    return await this.jobSeekerRepository.save(jobSeeker);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} jobSeeker`;
+  async remove(id: number): Promise<{ message: string }> {
+    const jobSeeker = await this.jobSeekerRepository.findOne({ where: { id } });
+    if (!jobSeeker) {
+      throw new Error('JobSeeker not found');
+    }
+    await this.jobSeekerRepository.remove(jobSeeker);
+    return { message: 'JobSeeker removed successfully' };
   }
 }

@@ -75,7 +75,7 @@ const seedData = async (dataSource: DataSource) => {
   const users = [
     {
       fullName: 'John Doe',
-      email: 'john@example.com',
+      email: 'talhashabir0@gmail.com',
       password: 'password123',
       phoneNumber: '+1234567890',
       role: Role.Employee,

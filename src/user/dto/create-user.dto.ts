@@ -11,7 +11,7 @@ import { Role, Gender } from '../../utils/constants/constants';
 
 export class CreateUserDto {
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'talhashabir0@gmail.com',
     description: 'Email address of the user',
   })
   @IsEmail()
@@ -31,7 +31,7 @@ export class CreateUserDto {
     description: 'Phone number of the user',
   })
   @IsPhoneNumber()
-  @IsNotEmpty()
+  @IsOptional()
   phoneNumber: string;
 
   @ApiProperty({

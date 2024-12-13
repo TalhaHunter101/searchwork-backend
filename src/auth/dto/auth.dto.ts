@@ -9,10 +9,11 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role, Gender } from '../../utils/constants/constants';
+import { Optional } from '@nestjs/common';
 
 export class RegisterDto {
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'talhashabir0@gmail.com',
     description: 'Email address of the user',
   })
   @IsEmail()
@@ -26,14 +27,6 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   password: string;
-
-  @ApiProperty({
-    example: '+1234567890',
-    description: 'Phone number of the user',
-  })
-  @IsPhoneNumber()
-  @IsNotEmpty()
-  phoneNumber: string;
 
   @ApiProperty({
     example: 'John Doe',
@@ -65,7 +58,7 @@ export class RegisterDto {
 
 export class LoginDto {
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'talhashabir0@gmail.com',
     description: 'Email address of the user',
   })
   @IsEmail()
@@ -81,7 +74,7 @@ export class LoginDto {
 
 export class ForgotPasswordDto {
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'talhashabir0@gmail.com',
     description: 'Email address of the user requesting password reset',
   })
   @IsEmail()
@@ -90,7 +83,7 @@ export class ForgotPasswordDto {
 
 export class ResetPasswordDto {
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'talhashabir0@gmail.com',
     description: 'Email address of the user',
   })
   @IsEmail()
@@ -116,7 +109,7 @@ export class ResetPasswordDto {
 
 export class VerifyOtpDto {
   @ApiProperty({
-    example: 'john@example.com',
+    example: 'talhashabir0@gmail.com',
     description: 'Email address of the user',
   })
   @IsEmail()

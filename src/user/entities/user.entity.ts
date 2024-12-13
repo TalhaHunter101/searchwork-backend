@@ -26,10 +26,11 @@ import { BaseEntity } from '../../common/base/base.entity';
 @Entity()
 @Index(['email', 'phoneNumber'], { unique: true })
 export class User extends BaseEntity {
-  @ApiProperty({ example: '+1234567890' })
-  @IsNotEmpty()
-  @IsPhoneNumber()
-  @Column({ nullable: false, unique: true })
+  @ApiProperty({ example: '+971123456789' })
+  @IsOptional()
+  @IsString()
+  @IsPhoneNumber(null)
+  @Column({ nullable: true })
   phoneNumber: string;
 
   @ApiProperty({ example: 'John Doe' })
@@ -75,7 +76,6 @@ export class User extends BaseEntity {
   jobSeekerProfile: JobSeeker;
 
   @OneToOne(() => Employer, (employer) => employer.user)
-  @JoinColumn()
   employerProfile: Employer;
 
   @ManyToOne(() => Location)

@@ -24,14 +24,14 @@ export class Location extends BaseEntity {
   @Column()
   address: string;
 
-  @Index({ spatial: true })
-  @Column({
-    type: 'geometry',
-    spatialFeatureType: 'Point',
-    srid: 4326,
-    nullable: true,
-  })
-  point: Point;
+  // @Index({ spatial: true })
+  // @Column({
+  //   type: 'geometry',
+  //   spatialFeatureType: 'Point',
+  //   srid: 4326,
+  //   nullable: true,
+  // })
+  // point: Point;
 
   @ApiProperty({ example: '12345' })
   @IsString()

@@ -9,27 +9,50 @@ import { JobPost } from './entities/job-post.entity';
 import { CreateJobPostDto } from './dto/create-job-post.dto';
 import { UpdateJobPostDto } from './dto/update-job-post.dto';
 import { User } from '../user/entities/user.entity';
-import { Role } from '../utils/constants/constants';
+import { Role, Status } from '../utils/constants/constants';
+import { Employer } from '../employer/entities/employer.entity';
+import { Location } from '../location/entities/location.entity';
 
 @Injectable()
 export class JobPostService {
   constructor(
     @InjectRepository(JobPost)
     private jobPostRepository: Repository<JobPost>,
+    @InjectRepository(Employer)
+    private employerRepository: Repository<Employer>,
+    @InjectRepository(Location)
+    private locationRepository: Repository<Location>,
   ) {}
 
-  async create(createJobPostDto: CreateJobPostDto, user: User) {
-    if (user.role !== Role.Employer) {
-      throw new UnauthorizedException('Only employers can create job posts');
-    }
-
-    const jobPost = this.jobPostRepository.create({
-      ...createJobPostDto,
-      employer: { id: user.employerProfile.id },
+  async create(createJobPostDto: CreateJobPostDto, userId: number) {
+    // Ensure the employer exists using the `user_id` field
+     console.log(userId, '--------')
+    const employer = await this.employerRepository.findOne({
+      where: { user: { id: userId } }, // Match the user ID from the request
+      relations: ['user'], // Include the related user if needed
     });
-
-    return this.jobPostRepository.save(jobPost);
+  
+    if (!employer) {
+      throw new NotFoundException('Employer not found');
+    }
+  
+    // Create a new job post
+    const jobPost = new JobPost();
+    jobPost.title = createJobPostDto.title;
+    jobPost.salary = createJobPostDto.salary;
+    jobPost.description = createJobPostDto.description;
+    jobPost.requirements = createJobPostDto.requirements;
+    jobPost.locationId = createJobPostDto.locationId; // Assuming Location ID is valid
+    jobPost.type = createJobPostDto.type;
+    jobPost.availability = createJobPostDto.availability;
+    jobPost.experienceLevel = createJobPostDto.experienceLevel;
+    jobPost.duration = createJobPostDto.duration;
+    jobPost.employer = employer; // Associate the employer entity
+  
+    return await this.jobPostRepository.save(jobPost);
   }
+  
+  
 
   async findAll(query: any = {}) {
     const queryBuilder = this.jobPostRepository
@@ -79,7 +102,7 @@ export class JobPostService {
       throw new UnauthorizedException('You can only update your own job posts');
     }
 
-    await this.jobPostRepository.update(id, updateJobPostDto);
+    // await this.jobPostRepository.update(id, updateJobPostDto);
     return this.findOne(id);
   }
 
