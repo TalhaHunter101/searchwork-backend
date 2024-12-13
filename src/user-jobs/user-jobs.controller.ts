@@ -1,57 +1,3 @@
-// import {
-//   Controller,
-//   Get,
-//   Post,
-//   Body,
-//   Patch,
-//   Param,
-//   Delete,
-// } from '@nestjs/common';
-// import { UserJobsService } from './user-jobs.service';
-// import { CreateUserJobDto } from './dto/create-user-job.dto';
-// import { UpdateUserJobDto } from './dto/update-user-job.dto';
-// import { ApiTags } from '@nestjs/swagger';
-
-// @ApiTags('user-jobs')
-// @Controller('user-jobs')
-// export class UserJobsController {
-//   constructor(private readonly userJobsService: UserJobsService) {}
-
-//   @Post()
-// async applyToJob(@Body() createUserJobDto: CreateUserJobDto) {
-//   return this.userJobsService.applyToJob(createUserJobDto);
-// }
-
-// @Get()
-// async getAllApplications(@Body() getApplicationsDto: { userId: number }) {
-//   return this.userJobsService.findByUser(getApplicationsDto.userId);
-// }
-
-
-// @Get(':id')
-// async getApplicationDetails(@Param('id') id: number) {
-//   return this.userJobsService.findOne(id);
-// }
-
-// @Delete(':id')
-// async withdrawApplication(@Param('id') id: number) {
-//   return this.userJobsService.remove(id);
-// }
-
-// @Get(':id/applications')
-// async getAllApplicationsForJobPost(@Param('id') jobPostId: number) {
-//   return this.userJobsService.findByJobPost(jobPostId);
-// }
-
-// @Patch(':id')
-// async updateApplicationStatus(@Param('id') id: number, @Body() updateUserJobDto: UpdateUserJobDto) {
-//   return this.userJobsService.updateStatus(id, updateUserJobDto);
-// }
-// }
-
-
-
-
 import {
   Controller,
   Get,
@@ -60,162 +6,124 @@ import {
   Patch,
   Param,
   Delete,
-  HttpException,
+  UseGuards,
+  Query,
+  ValidationPipe,
   HttpStatus,
+  ParseIntPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { UserJobsService } from './user-jobs.service';
 import { CreateUserJobDto } from './dto/create-user-job.dto';
 import { UpdateUserJobDto } from './dto/update-user-job.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { Status } from '../utils/constants/constants';
+import { UserJobFilterDto } from './dto/user-job-filter.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../utils/constants/constants';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User } from '../user/entities/user.entity';
+import { UserJobResponseDto } from './dto/user-job-response.dto';
 
 @ApiTags('user-jobs')
+@ApiBearerAuth('JWT-auth')
 @Controller('user-jobs')
 export class UserJobsController {
   constructor(private readonly userJobsService: UserJobsService) {}
 
-  // Apply to a job (Create job application)
   @Post()
-  @ApiOperation({ summary: 'Apply to a job post' })
-  @ApiBody({ type: CreateUserJobDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Apply for a job' })
   @ApiResponse({
-    status: 201,
-    description: 'Successfully applied to the job',
+    status: HttpStatus.CREATED,
+    description: 'Application submitted successfully',
+    type: UserJobResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'User has already applied for this job',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal Server Error',
-  })
-  async applyToJob(@Body() createUserJobDto: CreateUserJobDto) {
-    try {
-      return await this.userJobsService.applyToJob(createUserJobDto);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error applying for the job',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  create(
+    @Body(ValidationPipe) createUserJobDto: CreateUserJobDto,
+    @GetUser() user: User,
+  ) {
+    return this.userJobsService.create(createUserJobDto, user);
   }
 
-  // Get all applications for a user (job seeker)
   @Get()
-  @ApiOperation({ summary: 'Get all job applications for a specific user' })
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully fetched all applications',
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get all job applications with pagination and filters',
   })
   @ApiResponse({
-    status: 404,
-    description: 'No applications found for the user',
+    status: HttpStatus.OK,
+    description: 'Returns paginated job applications',
+    type: UserJobResponseDto,
   })
-  async getAllApplications(@Body() getApplicationsDto: { userId: number }) {
-    try {
-      return await this.userJobsService.findByUser(getApplicationsDto.userId);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error fetching applications for the user',
-        HttpStatus.NOT_FOUND,
-      );
-    }
+  findAll(
+    @Query(ValidationPipe) filterDto: UserJobFilterDto,
+    @GetUser() user: User,
+  ) {
+    return this.userJobsService.findAll(filterDto, user);
   }
 
-  // Get details of a specific job application
   @Get(':id')
-  @ApiOperation({ summary: 'Get details of a specific job application' })
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get job application by ID' })
   @ApiResponse({
-    status: 200,
-    description: 'Successfully fetched job application details',
+    status: HttpStatus.OK,
+    description: 'Returns the job application',
+    type: UserJobResponseDto,
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Job application not found',
-  })
-  async getApplicationDetails(@Param('id') id: number) {
-    try {
-      return await this.userJobsService.findOne(id);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error fetching job application details',
-        HttpStatus.NOT_FOUND,
-      );
-    }
+  findOne(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
+    return this.userJobsService.findOne(id, user);
   }
 
-  // Withdraw/Remove a job application
-  @Delete(':id')
-  @ApiOperation({ summary: 'Withdraw a job application' })
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully withdrew job application',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Job application not found',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal Server Error',
-  })
-  async withdrawApplication(@Param('id') id: number) {
-    try {
-      return await this.userJobsService.remove(id);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error withdrawing job application',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-  }
-
-  // Get all applications for a specific job post (for the employer)
-  @Get(':id/applications')
-  @ApiOperation({ summary: 'Get all job applications for a specific job post' })
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully fetched all applications for the job post',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'No applications found for the job post',
-  })
-  async getAllApplicationsForJobPost(@Param('id') jobPostId: number) {
-    try {
-      return await this.userJobsService.findByJobPost(jobPostId);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error fetching applications for the job post',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-  }
-
-  // Update the status of a job application (e.g., Shortlist, Reject)
   @Patch(':id')
-  @ApiOperation({ summary: 'Update the status of a job application' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer)
+  @ApiOperation({ summary: 'Update job application status (Employer only)' })
   @ApiResponse({
-    status: 200,
-    description: 'Successfully updated application status',
+    status: HttpStatus.OK,
+    description: 'Application status updated successfully',
+    type: UserJobResponseDto,
+  })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(ValidationPipe) updateUserJobDto: UpdateUserJobDto,
+    @GetUser() user: User,
+  ) {
+    return this.userJobsService.update(id, updateUserJobDto, user);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Withdraw job application' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Application withdrawn successfully',
+  })
+  remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
+    return this.userJobsService.remove(id, user);
+  }
+
+  @Get('job/:jobId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer)
+  @ApiOperation({
+    summary: 'Get all applications for a specific job post (Employer only)',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Job application not found',
+    status: HttpStatus.OK,
+    description: 'Returns all applications for the job post',
+    type: [UserJobResponseDto],
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid status provided',
-  })
-  async updateApplicationStatus(@Param('id') id: number, @Body() updateUserJobDto: UpdateUserJobDto) {
-    try {
-      return await this.userJobsService.updateStatus(id, updateUserJobDto);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error updating application status',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  findByJobPost(
+    @Param('jobId', ParseIntPipe) jobId: number,
+    @GetUser() user: User,
+  ) {
+    return this.userJobsService.findByJobPost(jobId, user);
   }
 }

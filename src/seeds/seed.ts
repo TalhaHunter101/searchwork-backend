@@ -30,25 +30,51 @@ const seedData = async (dataSource: DataSource) => {
   const userJobRepository = dataSource.getRepository(UserJob);
 
   console.log('Creating location data...');
-  // Create some locations
   const locations = [
     {
       city: 'New York',
       state: 'NY',
+      country: 'USA',
       address: '123 Main St',
-      zipCode: '10001',
+      postalCode: '10001',
+      latitude: 40.7128,
+      longitude: -74.006,
     },
     {
       city: 'Los Angeles',
       state: 'CA',
+      country: 'USA',
       address: '456 Elm St',
-      zipCode: '90001',
+      postalCode: '90001',
+      latitude: 34.0522,
+      longitude: -118.2437,
     },
     {
       city: 'Chicago',
       state: 'IL',
+      country: 'USA',
       address: '789 Oak St',
-      zipCode: '60601',
+      postalCode: '60601',
+      latitude: 41.8781,
+      longitude: -87.6298,
+    },
+    {
+      city: 'San Francisco',
+      state: 'CA',
+      country: 'USA',
+      address: '321 Tech Ave',
+      postalCode: '94105',
+      latitude: 37.7749,
+      longitude: -122.4194,
+    },
+    {
+      city: 'Austin',
+      state: 'TX',
+      country: 'USA',
+      address: '567 Startup Blvd',
+      postalCode: '73301',
+      latitude: 30.2672,
+      longitude: -97.7431,
     },
   ];
 
@@ -57,7 +83,6 @@ const seedData = async (dataSource: DataSource) => {
   console.log('Locations saved:', savedLocations.length);
 
   console.log('Creating user data...');
-  // Hash passwords before creating users
   const hashedPassword = await bcrypt.hash('password123', 10);
 
   const users = [
@@ -91,6 +116,26 @@ const seedData = async (dataSource: DataSource) => {
       location: savedLocations[2],
       isEmailVerified: true,
     },
+    {
+      fullName: 'Sarah Wilson',
+      email: 'sarah@example.com',
+      password: hashedPassword,
+      phoneNumber: '+1234567893',
+      role: Role.Employer,
+      gender: Gender.Female,
+      location: savedLocations[3],
+      isEmailVerified: true,
+    },
+    {
+      fullName: 'Mike Brown',
+      email: 'mike@example.com',
+      password: hashedPassword,
+      phoneNumber: '+1234567894',
+      role: Role.Admin,
+      gender: Gender.Male,
+      location: savedLocations[4],
+      isEmailVerified: false,
+    },
   ];
 
   console.log('Saving users...');
@@ -98,10 +143,9 @@ const seedData = async (dataSource: DataSource) => {
   console.log('Users saved:', savedUsers.length);
 
   console.log('Creating job seekers...');
-  // Create Job Seekers
   const jobSeekers = [
     {
-      skills: 'JavaScript, TypeScript, Node.js',
+      skills: 'JavaScript, TypeScript, Node.js, React, AWS',
       professionalExperience: '5 years of web development',
       qualification: 'Bachelor in Computer Science',
       majorSubjects: 'Computer Science',
@@ -110,7 +154,7 @@ const seedData = async (dataSource: DataSource) => {
       user: savedUsers[0],
     },
     {
-      skills: 'Python, Data Science, Machine Learning',
+      skills: 'Python, Data Science, Machine Learning, TensorFlow',
       professionalExperience: '3 years of data science',
       qualification: 'Master in Data Science',
       majorSubjects: 'Data Science',
@@ -118,14 +162,22 @@ const seedData = async (dataSource: DataSource) => {
       certificatesData: 'TensorFlow Developer Certificate',
       user: savedUsers[2],
     },
+    {
+      skills: 'UI/UX Design, Figma, Adobe XD, HTML, CSS',
+      professionalExperience: '2 years of UI/UX design',
+      qualification: 'Bachelor in Design',
+      majorSubjects: 'Interactive Design',
+      certificates: '2',
+      certificatesData: 'UI/UX Design Certificate, Adobe Certified',
+      user: savedUsers[4],
+    },
   ];
 
   console.log('Saving job seekers...');
-  const savedJobSeekers = await jobSeekerRepository.save(jobSeekers);
+  await jobSeekerRepository.save(jobSeekers);
   console.log('Job seekers saved successfully');
 
   console.log('Creating employers...');
-  // Create Employers
   const employers = [
     {
       companyName: 'Tech Corp',
@@ -134,6 +186,13 @@ const seedData = async (dataSource: DataSource) => {
       registrationNumber: '12345',
       user: savedUsers[1],
     },
+    {
+      companyName: 'Innovation Labs',
+      industry: 'Software Development',
+      companySize: '100-500',
+      registrationNumber: '67890',
+      user: savedUsers[3],
+    },
   ];
 
   console.log('Saving employers...');
@@ -141,7 +200,6 @@ const seedData = async (dataSource: DataSource) => {
   console.log('Employers saved successfully');
 
   console.log('Creating job posts...');
-  // Create Job Posts
   const jobPosts = [
     {
       title: 'Senior JavaScript Developer',
@@ -182,6 +240,32 @@ const seedData = async (dataSource: DataSource) => {
       location: savedLocations[2],
       employer: savedEmployers[0],
     },
+    {
+      title: 'UI/UX Designer',
+      type: JobType.FullTime,
+      description: 'Creative UI/UX designer needed for innovative projects',
+      requirements: 'Strong portfolio and 3+ years experience',
+      salary: 95000,
+      availability: JobAvailability.Hybrid,
+      experienceLevel: ExperienceLevel.Intermediate,
+      duration: JobDuration.Permanent,
+      status: Status.Hiring,
+      location: savedLocations[3],
+      employer: savedEmployers[1],
+    },
+    {
+      title: 'DevOps Engineer',
+      type: JobType.FullTime,
+      description: 'Seeking DevOps engineer for cloud infrastructure',
+      requirements: 'Experience with AWS, Docker, and Kubernetes',
+      salary: 140000,
+      availability: JobAvailability.Remote,
+      experienceLevel: ExperienceLevel.Senior,
+      duration: JobDuration.Permanent,
+      status: Status.Hiring,
+      location: savedLocations[4],
+      employer: savedEmployers[1],
+    },
   ];
 
   console.log('Saving job posts...');
@@ -189,27 +273,35 @@ const seedData = async (dataSource: DataSource) => {
   console.log('Job posts saved:', savedJobPosts.length);
 
   console.log('Creating user jobs (applications)...');
-  // Create User Jobs (applications)
   const userJobs = [
     {
       user: savedUsers[0],
       jobPost: savedJobPosts[0],
       status: Status.Applied,
-      jobSeeker: savedJobSeekers[0],
       appliedAt: new Date(),
     },
     {
       user: savedUsers[0],
       jobPost: savedJobPosts[2],
       status: Status.Accepted,
-      jobSeeker: savedJobSeekers[0],
       appliedAt: new Date(),
     },
     {
       user: savedUsers[2],
       jobPost: savedJobPosts[1],
       status: Status.Applied,
-      jobSeeker: savedJobSeekers[1],
+      appliedAt: new Date(),
+    },
+    {
+      user: savedUsers[4],
+      jobPost: savedJobPosts[3],
+      status: Status.Applied,
+      appliedAt: new Date(),
+    },
+    {
+      user: savedUsers[0],
+      jobPost: savedJobPosts[4],
+      status: Status.Hiring,
       appliedAt: new Date(),
     },
   ];
@@ -228,7 +320,7 @@ const seedData = async (dataSource: DataSource) => {
     // Use the existing data source configuration
     const dataSource = new DataSource({
       ...dataSourceOptions,
-      entities: [User, Location, JobSeeker, Employer, UserJob, JobPost], // Added JobPost entity
+      entities: [User, Location, JobSeeker, Employer, UserJob, JobPost],
     });
 
     console.log('Initializing connection...');

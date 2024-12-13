@@ -45,7 +45,6 @@ export class JobPost extends BaseEntity {
   @Column({ nullable: true })
   requirements: string;
 
-  @IsOptional()
   @IsNumber()
   @Column({ nullable: true })
   locationId: number;
@@ -68,7 +67,7 @@ export class JobPost extends BaseEntity {
   availability: JobAvailability;
 
   @ApiProperty({
-    example: 'Inteermidiate',
+    example: 'Intermediate',
     description: 'Experience required for this job',
   })
   @Column({
@@ -77,9 +76,9 @@ export class JobPost extends BaseEntity {
     default: ExperienceLevel.Intermediate,
   })
   experienceLevel: ExperienceLevel;
-  @
-  IsNotEmpty()
-  @Column({nullable: true})
+
+  @IsNotEmpty()
+  @Column({ nullable: false })
   employerId: number;
 
   @ApiProperty({ example: 'Permanent', description: 'Job posting type' })
@@ -94,17 +93,21 @@ export class JobPost extends BaseEntity {
   status: Status;
 
   // Table relations
-
+  // Many-to-One relationship with Employer, allows a job post to be associated with an employer
+  // If the employer is deleted, the job post will also be deleted
   @ManyToOne(() => Employer, (employer) => employer.jobPosts, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'employer_id' })
   employer: Employer;
 
+  // Many-to-One relationship with Location, allows a job post to be associated with a location
+  // If the location is deleted, the job post will also be deleted
   @ManyToOne(() => Location, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'location_id' })
   location: Location;
 
+  // One-to-Many relationship with UserJob, allows a job post to have multiple applications
   @OneToMany(() => UserJob, (userJob) => userJob.jobPost, {
     onDelete: 'CASCADE',
   })

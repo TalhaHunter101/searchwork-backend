@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateEmployerDto } from './dto/create-employer.dto';
 import { Employer } from './entities/employer.entity';
-import { User } from '../user/entities/user.entity';
+import { CreateEmployerDto } from './dto/create-employer.dto';
 import { UpdateEmployerDto } from './dto/update-employer.dto';
+import { User } from '../user/entities/user.entity';
+import { EmployerFilterDto } from './dto/employer-filter.dto';
+import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
+import { SortOrder } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class EmployerService {
@@ -16,52 +19,133 @@ export class EmployerService {
   ) {}
 
   async create(userId: number, createEmployerDto: CreateEmployerDto): Promise<Employer> {
-    // Find the user by userId
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Create a new Employer instance
-    const newEmployer = this.employerRepository.create({
-      ...createEmployerDto,  // Spread the DTO properties
-      user,  // Link the Employer to the User
+    // Check if user already has an employer profile
+    const existingProfile = await this.employerRepository.findOne({
+      where: { user: { id: userId } },
     });
 
-    // Save the Employer and return the created record
+    if (existingProfile) {
+      throw new UnauthorizedException('User already has an employer profile');
+    }
+
+    const newEmployer = this.employerRepository.create({
+      ...createEmployerDto,
+      user,
+    });
+
     return await this.employerRepository.save(newEmployer);
   }
 
-  findAll() {
-    return this.employerRepository.find();
-  }
+  async findAll(filterDto: EmployerFilterDto): Promise<PaginatedResponse<Employer>> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = SortOrder.DESC,
+      companyName,
+      industry,
+      companySize,
+      userId,
+      search,
+    } = filterDto;
 
-  findOne(id: number) {
-    return this.employerRepository.findOne({ where: { id } });
-  }
+    const queryBuilder = this.employerRepository
+      .createQueryBuilder('employer')
+      .leftJoinAndSelect('employer.user', 'user')
+      .leftJoinAndSelect('employer.jobPosts', 'jobPosts');
 
-  async update(id: number, updateEmployerDto: UpdateEmployerDto) {
-    const employer = await this.employerRepository.findOne({ where: { id } });
-    
-    if (!employer) {
-      throw new NotFoundException('Employer not found');
+    if (companyName) {
+      queryBuilder.andWhere('LOWER(employer.companyName) LIKE LOWER(:companyName)', {
+        companyName: `%${companyName}%`,
+      });
     }
 
-    // Update the Employer with the new values
-    Object.assign(employer, updateEmployerDto);
+    if (industry) {
+      queryBuilder.andWhere('LOWER(employer.industry) = LOWER(:industry)', {
+        industry,
+      });
+    }
 
-    return this.employerRepository.save(employer);
+    if (companySize) {
+      queryBuilder.andWhere('employer.companySize = :companySize', {
+        companySize,
+      });
+    }
+
+    if (userId) {
+      queryBuilder.andWhere('employer.user.id = :userId', { userId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(LOWER(employer.companyName) LIKE LOWER(:search) OR LOWER(employer.industry) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await queryBuilder
+      .orderBy(`employer.${sortBy}`, sortOrder)
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async remove(id: number) {
-    const employer = await this.employerRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<Employer> {
+    const employer = await this.employerRepository.findOne({
+      where: { id },
+      relations: ['user', 'jobPosts'],
+    });
 
     if (!employer) {
-      throw new NotFoundException('Employer not found');
+      throw new NotFoundException('Employer profile not found');
+    }
+
+    return employer;
+  }
+
+  async update(
+    id: number,
+    updateEmployerDto: UpdateEmployerDto,
+    user: User,
+  ): Promise<Employer> {
+    const employer = await this.findOne(id);
+
+    if (employer.user.id !== user.id) {
+      throw new UnauthorizedException('You can only update your own profile');
+    }
+
+    Object.assign(employer, updateEmployerDto);
+    return await this.employerRepository.save(employer);
+  }
+
+  async remove(id: number, user: User): Promise<{ message: string }> {
+    const employer = await this.findOne(id);
+
+    if (employer.user.id !== user.id) {
+      throw new UnauthorizedException('You can only delete your own profile');
     }
 
     await this.employerRepository.remove(employer);
-    return { message: 'Employer removed successfully' };
+    return { message: 'Employer profile removed successfully' };
   }
 }

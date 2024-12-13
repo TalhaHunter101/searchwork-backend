@@ -1,13 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { User } from '../../user/entities/user.entity';
-import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../common/base/base.entity';
-import { UserJob } from '../../user-jobs/entities/user-job.entity';
 
 @Entity()
 export class JobSeeker extends BaseEntity {
-
   @ApiProperty({
     example: 'Software Engineer',
     description: 'Please enter your skills',
@@ -43,7 +41,7 @@ export class JobSeeker extends BaseEntity {
 
   @ApiProperty({
     example: '2',
-    description: 'How much certificates does User have',
+    description: 'How many certificates does User have',
   })
   @IsNotEmpty()
   @IsString()
@@ -59,13 +57,12 @@ export class JobSeeker extends BaseEntity {
   @Column({ nullable: false })
   certificatesData: string;
 
-  @OneToOne(() => User, (user) => user.jobSeekerProfile)
+  // Table relations
+  // One-to-One relationship with User, allows a job seeker to be associated with a user
+  // If the user is deleted, the associated job seeker profile will also be deleted
+  @OneToOne(() => User, (user) => user.jobSeekerProfile, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
-
-  @OneToMany(() => UserJob, (userJob) => userJob.jobSeeker, {
-    cascade: true,
-    eager: false
-  })
-  userJobs?: UserJob[];
 }

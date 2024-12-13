@@ -17,8 +17,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<User> {
-    const { email, password, fullName, role, gender } =
-      registerDto;
+    const { email, password, fullName, role, gender } = registerDto;
 
     const existingUser = await this.userRepository.findOneBy({ email });
     if (existingUser) {
@@ -29,7 +28,7 @@ export class AuthService {
     if (!hashedPassword) {
       throw new BadRequestException('Error hashing password');
     }
-  
+
     const user = this.userRepository.create({
       email,
       fullName,
@@ -83,10 +82,10 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('Email not found');
     }
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      await this.userRepository.update({ email }, { otp });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.userRepository.update({ email }, { otp });
 
-      await this.mailService.sendPasswordResetEmail(email, otp);
+    await this.mailService.sendPasswordResetEmail(email, otp);
   }
 
   async resetPassword(resetDto: ResetPasswordDto) {

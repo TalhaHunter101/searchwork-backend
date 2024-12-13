@@ -10,14 +10,13 @@ import {
   Query,
   ParseIntPipe,
   ValidationPipe,
-  Request,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { JobPostService } from './job-post.service';
 import { CreateJobPostDto } from './dto/create-job-post.dto';
@@ -25,11 +24,11 @@ import { UpdateJobPostDto } from './dto/update-job-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Role, JobType, JobAvailability } from '../utils/constants/constants';
+import { Role } from '../utils/constants/constants';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { JobPost } from './entities/job-post.entity';
-import { OptionalParseIntPipe } from '../utils/pipes/optional-parse-int.pipe';
+import { JobPostResponseDto } from './dto/job-post-response.dto';
+import { JobPostFilterDto } from './dto/job-post-filter.dto';
 
 @ApiTags('job-posts')
 @ApiBearerAuth('JWT-auth')
@@ -38,40 +37,55 @@ export class JobPostController {
   constructor(private readonly jobPostService: JobPostService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer)
   @ApiOperation({ summary: 'Create a new job post' })
-  @ApiResponse({ status: 201, description: 'Job post created successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  create(@Body() createJobPostDto: CreateJobPostDto, @Request() req) {
-    return this.jobPostService.create(createJobPostDto, req.user.id);
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Job post created successfully',
+    type: JobPostResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized - Invalid token or missing authentication',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - User is not an employer',
+  })
+  create(
+    @Body(ValidationPipe) createJobPostDto: CreateJobPostDto,
+    @GetUser() user: User,
+  ) {
+    return this.jobPostService.create(createJobPostDto, user);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all job posts' })
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all job posts with pagination and filters' })
   @ApiResponse({
-    status: 200,
-    description: 'Return all job posts',
-    type: [JobPost],
+    status: HttpStatus.OK,
+    description: 'Returns paginated job posts',
+    type: JobPostResponseDto,
   })
-  @ApiQuery({ name: 'type', enum: JobType, required: false })
-  @ApiQuery({ name: 'availability', enum: JobAvailability, required: false })
-  @ApiQuery({ name: 'minSalary', type: Number, required: false })
   findAll(
-    @Query('type') type?: JobType,
-    @Query('availability') availability?: JobAvailability,
-    @Query('minSalary', OptionalParseIntPipe) minSalary?: number,
+    @Query(ValidationPipe) filterDto: JobPostFilterDto,
+    @GetUser() user: User,
   ) {
-    return this.jobPostService.findAll({ type, availability, minSalary });
+    return this.jobPostService.findAll(filterDto, user);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a job post by id' })
+  @ApiOperation({ summary: 'Get job post by ID' })
   @ApiResponse({
-    status: 200,
-    description: 'Return the job post',
-    type: JobPost,
+    status: HttpStatus.OK,
+    description: 'Returns the job post',
+    type: JobPostResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Job post not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Job post not found',
+  })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.jobPostService.findOne(id);
   }
@@ -79,15 +93,20 @@ export class JobPostController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Employer)
-  @ApiOperation({ summary: 'Update a job post' })
+  @ApiOperation({ summary: 'Update a job post (Employer only)' })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Job post updated successfully',
-    type: JobPost,
+    type: JobPostResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Not the owner' })
-  @ApiResponse({ status: 404, description: 'Job post not found' })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized - Invalid token or missing authentication',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - User is not the owner of this job post',
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body(ValidationPipe) updateJobPostDto: UpdateJobPostDto,
@@ -100,23 +119,19 @@ export class JobPostController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Employer)
   @ApiOperation({ summary: 'Delete a job post' })
-  @ApiResponse({ status: 200, description: 'Job post deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Not the owner' })
-  @ApiResponse({ status: 404, description: 'Job post not found' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Job post deleted successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized - Invalid token or missing authentication',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - User is not the owner of this job post',
+  })
   remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.jobPostService.remove(id, user);
-  }
-
-  @Get('employer/:employerId')
-  @ApiOperation({ summary: 'Get all job posts by employer' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return all job posts for an employer',
-    type: [JobPost],
-  })
-  @ApiResponse({ status: 404, description: 'Employer not found' })
-  findByEmployer(@Param('employerId', ParseIntPipe) employerId: number) {
-    return this.jobPostService.findByEmployer(employerId);
   }
 }

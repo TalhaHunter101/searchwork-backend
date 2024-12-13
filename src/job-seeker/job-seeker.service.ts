@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JobSeeker } from './entities/job-seeker.entity';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
 import { UpdateJobSeekerDto } from './dto/update-job-seeker.dto';
 import { User } from '../user/entities/user.entity';
+import { JobSeekerFilterDto } from './dto/job-seeker-filter.dto';
+import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
+import { SortOrder } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class JobSeekerService {
@@ -16,7 +19,6 @@ export class JobSeekerService {
   ) {}
 
   async create(userId: number, createJobSeekerDto: CreateJobSeekerDto): Promise<JobSeeker> {
-    // Find user by userId passed as a route parameter
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -25,41 +27,127 @@ export class JobSeekerService {
       throw new NotFoundException('User not found');
     }
 
-    // Create new JobSeeker using the provided data
+    // Check if user already has a job seeker profile
+    const existingProfile = await this.jobSeekerRepository.findOne({
+      where: { user: { id: userId } },
+    });
+
+    if (existingProfile) {
+      throw new UnauthorizedException('User already has a job seeker profile');
+    }
+
     const newJobSeeker = this.jobSeekerRepository.create({
       ...createJobSeekerDto,
-      user, // Associate the user with the job seeker
+      user,
     });
 
     return await this.jobSeekerRepository.save(newJobSeeker);
   }
 
-  async findAll(): Promise<JobSeeker[]> {
-    return await this.jobSeekerRepository.find({ relations: ['user'] });
+  async findAll(filterDto: JobSeekerFilterDto): Promise<PaginatedResponse<JobSeeker>> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = SortOrder.DESC,
+      skills,
+      qualification,
+      majorSubjects,
+      userId,
+      search,
+    } = filterDto;
+
+    const queryBuilder = this.jobSeekerRepository
+      .createQueryBuilder('jobSeeker')
+      .leftJoinAndSelect('jobSeeker.user', 'user')
+      .leftJoinAndSelect('jobSeeker.userJobs', 'userJobs');
+
+    if (skills) {
+      queryBuilder.andWhere('LOWER(jobSeeker.skills) LIKE LOWER(:skills)', {
+        skills: `%${skills}%`,
+      });
+    }
+
+    if (qualification) {
+      queryBuilder.andWhere('LOWER(jobSeeker.qualification) = LOWER(:qualification)', {
+        qualification,
+      });
+    }
+
+    if (majorSubjects) {
+      queryBuilder.andWhere('LOWER(jobSeeker.majorSubjects) = LOWER(:majorSubjects)', {
+        majorSubjects,
+      });
+    }
+
+    if (userId) {
+      queryBuilder.andWhere('jobSeeker.user.id = :userId', { userId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(LOWER(jobSeeker.skills) LIKE LOWER(:search) OR LOWER(jobSeeker.professionalExperience) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await queryBuilder
+      .orderBy(`jobSeeker.${sortBy}`, sortOrder)
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: number): Promise<JobSeeker> {
-    return await this.jobSeekerRepository.findOne({ where: { id }, relations: ['user'] });
+    const jobSeeker = await this.jobSeekerRepository.findOne({
+      where: { id },
+      relations: ['user', 'userJobs'],
+    });
+
+    if (!jobSeeker) {
+      throw new NotFoundException('Job seeker profile not found');
+    }
+
+    return jobSeeker;
   }
 
   async update(
     id: number,
     updateJobSeekerDto: UpdateJobSeekerDto,
+    user: User,
   ): Promise<JobSeeker> {
-    const jobSeeker = await this.jobSeekerRepository.findOne({ where: { id } });
-    if (!jobSeeker) {
-      throw new Error('JobSeeker not found');
+    const jobSeeker = await this.findOne(id);
+
+    // Check if the user owns this profile
+    if (jobSeeker.user.id !== user.id) {
+      throw new UnauthorizedException('You can only update your own profile');
     }
+
     Object.assign(jobSeeker, updateJobSeekerDto);
     return await this.jobSeekerRepository.save(jobSeeker);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
-    const jobSeeker = await this.jobSeekerRepository.findOne({ where: { id } });
-    if (!jobSeeker) {
-      throw new Error('JobSeeker not found');
+  async remove(id: number, user: User): Promise<{ message: string }> {
+    const jobSeeker = await this.findOne(id);
+
+    // Check if the user owns this profile
+    if (jobSeeker.user.id !== user.id) {
+      throw new UnauthorizedException('You can only delete your own profile');
     }
+
     await this.jobSeekerRepository.remove(jobSeeker);
-    return { message: 'JobSeeker removed successfully' };
+    return { message: 'Job seeker profile removed successfully' };
   }
 }

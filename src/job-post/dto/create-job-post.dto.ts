@@ -1,16 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { JobType, JobAvailability, ExperienceLevel, JobDuration, Status } from '../../utils/constants/constants';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import {
+  JobType,
+  JobAvailability,
+  ExperienceLevel,
+  JobDuration,
+} from '../../utils/constants/constants';
 
 export class CreateJobPostDto {
-  @ApiProperty({
-    example: 1,
-    description: 'Enter Employer id',
-  })
-  @IsNotEmpty()
-  @IsNumber()
-  employerId: number;
-
   @ApiProperty({
     example: 'Senior Software Engineer',
     description: 'Job title',

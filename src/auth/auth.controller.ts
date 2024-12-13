@@ -52,7 +52,10 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid OTP or email.' })
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
     try {
-      return await this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+      return await this.authService.verifyOtp(
+        verifyOtpDto.email,
+        verifyOtpDto.otp,
+      );
     } catch (error) {
       throw new BadRequestException(error.message || 'OTP verification failed');
     }

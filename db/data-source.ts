@@ -6,6 +6,7 @@ import { JobSeeker } from '../src/job-seeker/entities/job-seeker.entity';
 import { Employer } from '../src/employer/entities/employer.entity';
 import { JobPost } from '../src/job-post/entities/job-post.entity';
 import { UserJob } from '../src/user-jobs/entities/user-job.entity';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 config();
 
@@ -20,6 +21,7 @@ export const dataSourceOptions: DataSourceOptions = {
   migrations: [__dirname + '/migrations/*.ts'],
   synchronize: false,
   logging: false,
+  namingStrategy: new SnakeNamingStrategy(),
 };
 
 const dataSource = new DataSource(dataSourceOptions);

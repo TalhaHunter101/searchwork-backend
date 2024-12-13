@@ -6,59 +6,92 @@ import {
   Patch,
   Param,
   Delete,
-  HttpException,
+  UseGuards,
+  Query,
+  ValidationPipe,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JobSeekerService } from './job-seeker.service';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
 import { UpdateJobSeekerDto } from './dto/update-job-seeker.dto';
+import { JobSeekerFilterDto } from './dto/job-seeker-filter.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../utils/constants/constants';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User } from '../user/entities/user.entity';
 
-@Controller('job-seeker')
+@ApiTags('job-seekers')
+@ApiBearerAuth('JWT-auth')
+@Controller('job-seekers')
 export class JobSeekerController {
   constructor(private readonly jobSeekerService: JobSeekerService) {}
 
-  @Post(':userId') // Route parameter for userId
-  async create(@Param('userId') userId: number, @Body() createJobSeekerDto: CreateJobSeekerDto) {
-    try {
-      // Pass userId along with the other data to the service
-      return await this.jobSeekerService.create(userId, createJobSeekerDto);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Create a job seeker profile' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Profile created successfully',
+  })
+  create(
+    @Body(ValidationPipe) createJobSeekerDto: CreateJobSeekerDto,
+    @GetUser() user: User,
+  ) {
+    return this.jobSeekerService.create(user.id, createJobSeekerDto);
   }
 
   @Get()
-  async findAll() {
-    return await this.jobSeekerService.findAll();
+  @ApiOperation({ summary: 'Get all job seekers with pagination and filters' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns paginated job seekers',
+  })
+  findAll(@Query(ValidationPipe) filterDto: JobSeekerFilterDto) {
+    return this.jobSeekerService.findAll(filterDto);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const jobSeeker = await this.jobSeekerService.findOne(+id);
-    if (!jobSeeker) {
-      throw new HttpException('JobSeeker not found', HttpStatus.NOT_FOUND);
-    }
-    return jobSeeker;
+  @ApiOperation({ summary: 'Get job seeker by ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns the job seeker profile',
+  })
+  findOne(@Param('id') id: string) {
+    return this.jobSeekerService.findOne(+id);
   }
 
   @Patch(':id')
-  async update(
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update job seeker profile' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Profile updated successfully',
+  })
+  update(
     @Param('id') id: string,
-    @Body() updateJobSeekerDto: UpdateJobSeekerDto,
+    @Body(ValidationPipe) updateJobSeekerDto: UpdateJobSeekerDto,
+    @GetUser() user: User,
   ) {
-    try {
-      return await this.jobSeekerService.update(+id, updateJobSeekerDto);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+    return this.jobSeekerService.update(+id, updateJobSeekerDto, user);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      return await this.jobSeekerService.remove(+id);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete job seeker profile' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Profile deleted successfully',
+  })
+  remove(@Param('id') id: string, @GetUser() user: User) {
+    return this.jobSeekerService.remove(+id, user);
   }
 }

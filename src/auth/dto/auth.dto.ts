@@ -3,13 +3,11 @@ import {
   IsEmail,
   IsString,
   IsNotEmpty,
-  IsPhoneNumber,
   IsEnum,
   IsOptional,
   MinLength,
 } from 'class-validator';
 import { Role, Gender } from '../../utils/constants/constants';
-import { Optional } from '@nestjs/common';
 
 export class RegisterDto {
   @ApiProperty({
