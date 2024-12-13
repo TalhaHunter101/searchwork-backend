@@ -77,6 +77,10 @@ export class JobPost extends BaseEntity {
     default: ExperienceLevel.Intermediate,
   })
   experienceLevel: ExperienceLevel;
+  @
+  IsNotEmpty()
+  @Column({nullable: true})
+  employerId: number;
 
   @ApiProperty({ example: 'Permanent', description: 'Job posting type' })
   @Column({ type: 'enum', enum: JobDuration, default: JobDuration.Permanent })
@@ -94,6 +98,7 @@ export class JobPost extends BaseEntity {
   @ManyToOne(() => Employer, (employer) => employer.jobPosts, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'employer_id' })
   employer: Employer;
 
   @ManyToOne(() => Location, { onDelete: 'CASCADE' })

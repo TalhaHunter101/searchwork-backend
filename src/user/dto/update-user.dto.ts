@@ -2,15 +2,6 @@ import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from 'class-validator';
 
 export class UpdateUserProfile {
-  @ApiProperty({
-    example: '+971123456789',
-    description: 'The phone number of the account',
-    format: 'string',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsPhoneNumber()
-  phoneNumber: string;
 
   @ApiProperty({
     example: 'talhashabir0@gmail.com',

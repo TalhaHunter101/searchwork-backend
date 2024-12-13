@@ -4,10 +4,12 @@ import { JobPostService } from './job-post.service';
 import { JobPostController } from './job-post.controller';
 import { JobPost } from './entities/job-post.entity';
 import { AuthModule } from '../auth/auth.module';
+import { Employer } from '../employer/entities/employer.entity';
+import { Location } from '../location/entities/location.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobPost]),
+    TypeOrmModule.forFeature([JobPost, Employer, Location]),
     AuthModule,
   ],
   controllers: [JobPostController],

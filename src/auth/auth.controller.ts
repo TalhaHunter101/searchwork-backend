@@ -20,7 +20,11 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'User successfully registered.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    try {
+      return await this.authService.register(registerDto);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Registration failed');
+    }
   }
 
   @Post('login')
@@ -29,11 +33,16 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User successfully logged in.' })
   @ApiResponse({ status: 400, description: 'Invalid credentials.' })
   async login(@Body() loginDto: LoginDto) {
-    const user = await this.authService.validateUser(loginDto);
-    if (user) {
-      return this.authService.login(user);
+    try {
+      const user = await this.authService.validateUser(loginDto);
+      if (user) {
+        return this.authService.login(user);
+      } else {
+        throw new BadRequestException('Invalid credentials');
+      }
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Login failed');
     }
-    throw new BadRequestException('Invalid credentials');
   }
 
   @Post('verify-otp')
@@ -42,7 +51,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'OTP verified successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid OTP or email.' })
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
-    return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+    try {
+      return await this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'OTP verification failed');
+    }
   }
 
   @Post('forgot-password')
@@ -51,8 +64,12 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'OTP sent to email.' })
   @ApiResponse({ status: 400, description: 'Email not found.' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
-    await this.authService.forgotPassword(forgotPasswordDto.email);
-    return { message: 'OTP sent to email' };
+    try {
+      await this.authService.forgotPassword(forgotPasswordDto.email);
+      return { message: 'OTP sent to email' };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to send OTP');
+    }
   }
 
   @Post('reset-password')
@@ -61,6 +78,10 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid OTP or password.' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return this.authService.resetPassword(resetPasswordDto);
+    try {
+      return await this.authService.resetPassword(resetPasswordDto);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Password reset failed');
+    }
   }
 }
