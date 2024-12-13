@@ -17,7 +17,7 @@ export const dataSourceOptions: DataSourceOptions = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   entities: [Location, User, JobSeeker, Employer, JobPost, UserJob],
-  migrations: ['dist/db/migrations/*{.ts,.js}'],
+  migrations: [__dirname + '/migrations/*.ts'],
   synchronize: false,
   logging: false,
 };

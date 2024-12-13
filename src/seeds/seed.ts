@@ -11,9 +11,11 @@ import {
   JobType,
   JobAvailability,
   Status,
+  ExperienceLevel,
+  JobDuration,
 } from '../utils/constants/constants';
-import { Point } from 'geojson';
 import { dataSourceOptions } from '../../db/data-source';
+import * as bcrypt from 'bcryptjs';
 
 console.log('Starting seed process...');
 
@@ -29,40 +31,24 @@ const seedData = async (dataSource: DataSource) => {
 
   console.log('Creating location data...');
   // Create some locations
-  const point1: Point = {
-    type: 'Point',
-    coordinates: [-74.006, 40.7128],
-  };
-  const point2: Point = {
-    type: 'Point',
-    coordinates: [-118.2437, 34.0522],
-  };
-  const point3: Point = {
-    type: 'Point',
-    coordinates: [-87.6298, 41.8781],
-  };
-
   const locations = [
     {
       city: 'New York',
       state: 'NY',
       address: '123 Main St',
       zipCode: '10001',
-      point: point1,
     },
     {
       city: 'Los Angeles',
       state: 'CA',
       address: '456 Elm St',
       zipCode: '90001',
-      point: point2,
     },
     {
       city: 'Chicago',
       state: 'IL',
       address: '789 Oak St',
       zipCode: '60601',
-      point: point3,
     },
   ];
 
@@ -71,34 +57,39 @@ const seedData = async (dataSource: DataSource) => {
   console.log('Locations saved:', savedLocations.length);
 
   console.log('Creating user data...');
-  // Create some users
+  // Hash passwords before creating users
+  const hashedPassword = await bcrypt.hash('password123', 10);
+
   const users = [
     {
       fullName: 'John Doe',
       email: 'talhashabir0@gmail.com',
-      password: 'password123',
+      password: hashedPassword,
       phoneNumber: '+1234567890',
       role: Role.Employee,
       gender: Gender.Male,
       location: savedLocations[0],
+      isEmailVerified: true,
     },
     {
       fullName: 'Jane Smith',
       email: 'jane@example.com',
-      password: 'password123',
+      password: hashedPassword,
       phoneNumber: '+1234567891',
       role: Role.Employer,
       gender: Gender.Female,
       location: savedLocations[1],
+      isEmailVerified: true,
     },
     {
       fullName: 'Alex Johnson',
       email: 'alex@example.com',
-      password: 'password123',
+      password: hashedPassword,
       phoneNumber: '+1234567892',
       role: Role.Employee,
       gender: Gender.Other,
       location: savedLocations[2],
+      isEmailVerified: true,
     },
   ];
 
@@ -110,7 +101,6 @@ const seedData = async (dataSource: DataSource) => {
   // Create Job Seekers
   const jobSeekers = [
     {
-      userId: savedUsers[0].id,
       skills: 'JavaScript, TypeScript, Node.js',
       professionalExperience: '5 years of web development',
       qualification: 'Bachelor in Computer Science',
@@ -120,7 +110,6 @@ const seedData = async (dataSource: DataSource) => {
       user: savedUsers[0],
     },
     {
-      userId: savedUsers[2].id,
       skills: 'Python, Data Science, Machine Learning',
       professionalExperience: '3 years of data science',
       qualification: 'Master in Data Science',
@@ -132,14 +121,13 @@ const seedData = async (dataSource: DataSource) => {
   ];
 
   console.log('Saving job seekers...');
-  await jobSeekerRepository.save(jobSeekers);
+  const savedJobSeekers = await jobSeekerRepository.save(jobSeekers);
   console.log('Job seekers saved successfully');
 
   console.log('Creating employers...');
   // Create Employers
   const employers = [
     {
-      userId: savedUsers[1].id,
       companyName: 'Tech Corp',
       industry: 'Technology',
       companySize: '50-100',
@@ -149,7 +137,7 @@ const seedData = async (dataSource: DataSource) => {
   ];
 
   console.log('Saving employers...');
-  await employerRepository.save(employers);
+  const savedEmployers = await employerRepository.save(employers);
   console.log('Employers saved successfully');
 
   console.log('Creating job posts...');
@@ -162,8 +150,11 @@ const seedData = async (dataSource: DataSource) => {
       requirements: 'Min 5 years experience with modern JavaScript',
       salary: 120000,
       availability: JobAvailability.Remote,
-      location: savedLocations[0], // New York location
-      employer: employers[0], // Tech Corp
+      experienceLevel: ExperienceLevel.Expert,
+      duration: JobDuration.Permanent,
+      status: Status.Hiring,
+      location: savedLocations[0],
+      employer: savedEmployers[0],
     },
     {
       title: 'Data Scientist',
@@ -172,8 +163,11 @@ const seedData = async (dataSource: DataSource) => {
       requirements: 'Masters in Data Science or related field',
       salary: 130000,
       availability: JobAvailability.Hybrid,
-      location: savedLocations[1], // LA location
-      employer: employers[0], // Tech Corp
+      experienceLevel: ExperienceLevel.Intermediate,
+      duration: JobDuration.Permanent,
+      status: Status.Hiring,
+      location: savedLocations[1],
+      employer: savedEmployers[0],
     },
     {
       title: 'Frontend Developer',
@@ -182,8 +176,11 @@ const seedData = async (dataSource: DataSource) => {
       requirements: '3+ years of React experience',
       salary: 80000,
       availability: JobAvailability.OnSite,
-      location: savedLocations[2], // Chicago location
-      employer: employers[0], // Tech Corp
+      experienceLevel: ExperienceLevel.Entry,
+      duration: JobDuration.Temporary,
+      status: Status.Hiring,
+      location: savedLocations[2],
+      employer: savedEmployers[0],
     },
   ];
 
@@ -195,19 +192,25 @@ const seedData = async (dataSource: DataSource) => {
   // Create User Jobs (applications)
   const userJobs = [
     {
-      user: savedUsers[0], // John Doe
-      jobPost: savedJobPosts[0], // Senior JavaScript Developer position
+      user: savedUsers[0],
+      jobPost: savedJobPosts[0],
       status: Status.Applied,
+      jobSeeker: savedJobSeekers[0],
+      appliedAt: new Date(),
     },
     {
-      user: savedUsers[0], // John Doe
-      jobPost: savedJobPosts[2], // Frontend Developer position
+      user: savedUsers[0],
+      jobPost: savedJobPosts[2],
       status: Status.Accepted,
+      jobSeeker: savedJobSeekers[0],
+      appliedAt: new Date(),
     },
     {
-      user: savedUsers[2], // Alex Johnson
-      jobPost: savedJobPosts[1], // Data Scientist position
+      user: savedUsers[2],
+      jobPost: savedJobPosts[1],
       status: Status.Applied,
+      jobSeeker: savedJobSeekers[1],
+      appliedAt: new Date(),
     },
   ];
 
