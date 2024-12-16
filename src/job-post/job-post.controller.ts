@@ -39,19 +39,17 @@ export class JobPostController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Employer)
-  @ApiOperation({ summary: 'Create a new job post' })
+  @ApiOperation({
+    summary: 'Create a new job post',
+    description:
+      'Access levels:\n' +
+      '- Employers: Can create job posts\n' +
+      '- Others: No access',
+  })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Job post created successfully',
     type: JobPostResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - Invalid token or missing authentication',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - User is not an employer',
   })
   create(
     @Body(ValidationPipe) createJobPostDto: CreateJobPostDto,
@@ -61,30 +59,28 @@ export class JobPostController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all job posts with pagination and filters' })
+  @ApiOperation({
+    summary: 'Get all job posts with pagination and filters',
+    description: 'Public endpoint - Anyone can view job posts',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Returns paginated job posts',
     type: JobPostResponseDto,
   })
-  findAll(
-    @Query(ValidationPipe) filterDto: JobPostFilterDto,
-    @GetUser() user: User,
-  ) {
-    return this.jobPostService.findAll(filterDto, user);
+  findAll(@Query(ValidationPipe) filterDto: JobPostFilterDto) {
+    return this.jobPostService.findAll(filterDto);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get job post by ID' })
+  @ApiOperation({
+    summary: 'Get job post by ID',
+    description: 'Public endpoint - Anyone can view a job post',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Returns the job post',
     type: JobPostResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Job post not found',
   })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.jobPostService.findOne(id);
@@ -92,20 +88,19 @@ export class JobPostController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Employer)
-  @ApiOperation({ summary: 'Update a job post (Employer only)' })
+  @Roles(Role.Employer, Role.Admin)
+  @ApiOperation({
+    summary: 'Update a job post',
+    description:
+      'Access levels:\n' +
+      '- Employers: Can update their own job posts\n' +
+      '- Admin: Can update any job post\n' +
+      '- Others: No access',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Job post updated successfully',
     type: JobPostResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - Invalid token or missing authentication',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - User is not the owner of this job post',
   })
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -117,19 +112,18 @@ export class JobPostController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Employer)
-  @ApiOperation({ summary: 'Delete a job post' })
+  @Roles(Role.Employer, Role.Admin)
+  @ApiOperation({
+    summary: 'Delete a job post',
+    description:
+      'Access levels:\n' +
+      '- Employers: Can delete their own job posts\n' +
+      '- Admin: Can delete any job post\n' +
+      '- Others: No access',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Job post deleted successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - Invalid token or missing authentication',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - User is not the owner of this job post',
   })
   remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.jobPostService.remove(id, user);

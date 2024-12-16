@@ -50,8 +50,16 @@ export class AuthService {
   }
 
   async validateUser(loginDto: LoginDto): Promise<User | null> {
-    const user = await this.userRepository.findOneBy({ email: loginDto.email });
-    if (user && (await bcrypt.compare(loginDto.password, user.password))) {
+    const user = await this.userRepository.findOne({
+      where: { email: loginDto.email },
+      select: ['id', 'email', 'password', 'isEmailVerified', 'role'], // Explicitly include the password
+    });
+
+    if (!user || !user.password) {
+      throw new BadRequestException('Invalid email or password');
+    }
+
+    if (await bcrypt.compare(loginDto.password, user.password)) {
       return user;
     }
     return null;

@@ -10,7 +10,6 @@ import { CreateJobPostDto } from './dto/create-job-post.dto';
 import { UpdateJobPostDto } from './dto/update-job-post.dto';
 import { User } from '../user/entities/user.entity';
 import { Role } from '../utils/constants/constants';
-import { Employer } from '../employer/entities/employer.entity';
 import { Location } from '../location/entities/location.entity';
 import { SortOrder } from '../common/dto/pagination.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
@@ -21,23 +20,11 @@ export class JobPostService {
   constructor(
     @InjectRepository(JobPost)
     private jobPostRepository: Repository<JobPost>,
-    @InjectRepository(Employer)
-    private employerRepository: Repository<Employer>,
     @InjectRepository(Location)
     private locationRepository: Repository<Location>,
   ) {}
 
   async create(createJobPostDto: CreateJobPostDto, user: User) {
-    const employer = await this.employerRepository.findOne({
-      where: { user: { id: user.id } }, // Match the user ID from the request
-      relations: ['user'], // Include the related user if needed
-    });
-
-    if (!employer) {
-      throw new NotFoundException('Employer not found');
-    }
-
-    // Create a new job post
     const jobPost = new JobPost();
     jobPost.title = createJobPostDto.title;
     jobPost.salary = createJobPostDto.salary;
@@ -47,7 +34,7 @@ export class JobPostService {
     jobPost.availability = createJobPostDto.availability;
     jobPost.experienceLevel = createJobPostDto.experienceLevel;
     jobPost.duration = createJobPostDto.duration;
-    jobPost.employerId = employer.id;
+    jobPost.employerId = user.employerProfile.id;
 
     if (createJobPostDto.locationId) {
       const location = await this.locationRepository.findOne({
@@ -63,7 +50,7 @@ export class JobPostService {
 
   async findAll(
     filterDto: JobPostFilterDto,
-    user: User,
+    user?: User,
   ): Promise<PaginatedResponse<JobPost>> {
     const {
       page = 1,
@@ -85,9 +72,10 @@ export class JobPostService {
     const queryBuilder = this.jobPostRepository
       .createQueryBuilder('jobPost')
       .leftJoinAndSelect('jobPost.employer', 'employer')
+      .leftJoinAndSelect('employer.user', 'user')
       .leftJoinAndSelect('jobPost.location', 'location');
 
-    // Add filters
+    // Apply filters without role-based restrictions
     if (type) {
       queryBuilder.andWhere('jobPost.type = :type', { type });
     }
@@ -153,11 +141,9 @@ export class JobPostService {
         .orderBy('distance', 'ASC');
     }
 
-    const skip = (page - 1) * limit;
-
     const [items, total] = await queryBuilder
       .orderBy(`jobPost.${sortBy}`, sortOrder)
-      .skip(skip)
+      .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
 
@@ -172,14 +158,14 @@ export class JobPostService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<JobPost> {
     const jobPost = await this.jobPostRepository.findOne({
       where: { id },
-      relations: ['employer', 'location', 'userJobs'],
+      relations: ['employer', 'employer.user', 'location'],
     });
 
     if (!jobPost) {
-      throw new NotFoundException(`Job post with ID ${id} not found`);
+      throw new NotFoundException('Job post not found');
     }
 
     return jobPost;
@@ -187,31 +173,38 @@ export class JobPostService {
 
   async update(id: number, updateJobPostDto: UpdateJobPostDto, user: User) {
     const jobPost = await this.findOne(id);
+
     if (!jobPost) {
-      throw new NotFoundException(`Job post with ID ${id} not found`);
+      throw new NotFoundException('Job post not found');
     }
 
-    if (
-      user.role !== Role.Employer ||
-      jobPost.employerId !== user.employerProfile.id
-    ) {
+    // Only employer who owns the post or admin can update
+    if (user.role === Role.Employer && jobPost.employer.user.id !== user.id) {
       throw new UnauthorizedException('You can only update your own job posts');
+    } else if (user.role !== Role.Admin && user.role !== Role.Employer) {
+      throw new UnauthorizedException(
+        'You do not have permission to update job posts',
+      );
     }
 
     await this.jobPostRepository.update(id, updateJobPostDto);
+    return this.findOne(id);
   }
 
   async remove(id: number, user: User) {
     const jobPost = await this.findOne(id);
+
     if (!jobPost) {
-      throw new NotFoundException(`Job post with ID ${id} not found`);
+      throw new NotFoundException('Job post not found');
     }
 
-    if (
-      user.role !== Role.Employer ||
-      jobPost.employer.id !== user.employerProfile.id
-    ) {
+    // Only employer who owns the post or admin can delete
+    if (user.role === Role.Employer && jobPost.employer.user.id !== user.id) {
       throw new UnauthorizedException('You can only delete your own job posts');
+    } else if (user.role !== Role.Admin && user.role !== Role.Employer) {
+      throw new UnauthorizedException(
+        'You do not have permission to delete job posts',
+      );
     }
 
     await this.jobPostRepository.remove(jobPost);

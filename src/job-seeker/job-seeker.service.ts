@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JobSeeker } from './entities/job-seeker.entity';
@@ -8,43 +13,19 @@ import { User } from '../user/entities/user.entity';
 import { JobSeekerFilterDto } from './dto/job-seeker-filter.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 import { SortOrder } from '../common/dto/pagination.dto';
+import { Role } from '../utils/constants/constants';
 
 @Injectable()
 export class JobSeekerService {
   constructor(
     @InjectRepository(JobSeeker)
     private readonly jobSeekerRepository: Repository<JobSeeker>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(userId: number, createJobSeekerDto: CreateJobSeekerDto): Promise<JobSeeker> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Check if user already has a job seeker profile
-    const existingProfile = await this.jobSeekerRepository.findOne({
-      where: { user: { id: userId } },
-    });
-
-    if (existingProfile) {
-      throw new UnauthorizedException('User already has a job seeker profile');
-    }
-
-    const newJobSeeker = this.jobSeekerRepository.create({
-      ...createJobSeekerDto,
-      user,
-    });
-
-    return await this.jobSeekerRepository.save(newJobSeeker);
-  }
-
-  async findAll(filterDto: JobSeekerFilterDto): Promise<PaginatedResponse<JobSeeker>> {
+  async findAll(
+    filterDto: JobSeekerFilterDto,
+    user?: User,
+  ): Promise<PaginatedResponse<JobSeeker>> {
     const {
       page = 1,
       limit = 10,
@@ -60,7 +41,7 @@ export class JobSeekerService {
     const queryBuilder = this.jobSeekerRepository
       .createQueryBuilder('jobSeeker')
       .leftJoinAndSelect('jobSeeker.user', 'user')
-      .leftJoinAndSelect('jobSeeker.userJobs', 'userJobs');
+      .leftJoinAndSelect('user.userJobs', 'userJobs');
 
     if (skills) {
       queryBuilder.andWhere('LOWER(jobSeeker.skills) LIKE LOWER(:skills)', {
@@ -69,24 +50,30 @@ export class JobSeekerService {
     }
 
     if (qualification) {
-      queryBuilder.andWhere('LOWER(jobSeeker.qualification) = LOWER(:qualification)', {
-        qualification,
-      });
+      queryBuilder.andWhere(
+        'LOWER(jobSeeker.qualification) = LOWER(:qualification)',
+        {
+          qualification,
+        },
+      );
     }
 
     if (majorSubjects) {
-      queryBuilder.andWhere('LOWER(jobSeeker.majorSubjects) = LOWER(:majorSubjects)', {
-        majorSubjects,
-      });
+      queryBuilder.andWhere(
+        'LOWER(jobSeeker.majorSubjects) = LOWER(:majorSubjects)',
+        {
+          majorSubjects,
+        },
+      );
     }
 
     if (userId) {
-      queryBuilder.andWhere('jobSeeker.user.id = :userId', { userId });
+      queryBuilder.andWhere('user.id = :userId', { userId });
     }
 
     if (search) {
       queryBuilder.andWhere(
-        '(LOWER(jobSeeker.skills) LIKE LOWER(:search) OR LOWER(jobSeeker.professionalExperience) LIKE LOWER(:search))',
+        '(LOWER(jobSeeker.skills) LIKE LOWER(:search) OR  LOWER(jobSeeker.professionalExperience) LIKE LOWER(:search))',
         { search: `%${search}%` },
       );
     }
@@ -113,7 +100,7 @@ export class JobSeekerService {
   async findOne(id: number): Promise<JobSeeker> {
     const jobSeeker = await this.jobSeekerRepository.findOne({
       where: { id },
-      relations: ['user', 'userJobs'],
+      relations: ['user', 'user.userJobs'],
     });
 
     if (!jobSeeker) {
@@ -123,6 +110,32 @@ export class JobSeekerService {
     return jobSeeker;
   }
 
+  async create(
+    createJobSeekerDto: CreateJobSeekerDto,
+    user: User,
+  ): Promise<JobSeeker> {
+    if (user.role !== Role.Employee) {
+      throw new UnauthorizedException(
+        'Only employees can create job seeker profiles',
+      );
+    }
+
+    const existingProfile = await this.jobSeekerRepository.findOne({
+      where: { user: { id: user.id } },
+    });
+
+    if (existingProfile) {
+      throw new UnauthorizedException('User already has a job seeker profile');
+    }
+
+    const newJobSeeker = this.jobSeekerRepository.create({
+      ...createJobSeekerDto,
+      user,
+    });
+
+    return await this.jobSeekerRepository.save(newJobSeeker);
+  }
+
   async update(
     id: number,
     updateJobSeekerDto: UpdateJobSeekerDto,
@@ -130,9 +143,12 @@ export class JobSeekerService {
   ): Promise<JobSeeker> {
     const jobSeeker = await this.findOne(id);
 
-    // Check if the user owns this profile
-    if (jobSeeker.user.id !== user.id) {
+    if (user.role === Role.Employee && jobSeeker.user.id !== user.id) {
       throw new UnauthorizedException('You can only update your own profile');
+    } else if (user.role !== Role.Admin && user.role !== Role.Employee) {
+      throw new UnauthorizedException(
+        'You do not have permission to update profiles',
+      );
     }
 
     Object.assign(jobSeeker, updateJobSeekerDto);
@@ -142,9 +158,12 @@ export class JobSeekerService {
   async remove(id: number, user: User): Promise<{ message: string }> {
     const jobSeeker = await this.findOne(id);
 
-    // Check if the user owns this profile
-    if (jobSeeker.user.id !== user.id) {
+    if (user.role === Role.Employee && jobSeeker.user.id !== user.id) {
       throw new UnauthorizedException('You can only delete your own profile');
+    } else if (user.role !== Role.Admin && user.role !== Role.Employee) {
+      throw new UnauthorizedException(
+        'You do not have permission to delete profiles',
+      );
     }
 
     await this.jobSeekerRepository.remove(jobSeeker);
