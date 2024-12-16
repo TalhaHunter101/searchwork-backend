@@ -5,9 +5,10 @@ import { UserJob } from './entities/user-job.entity';
 import { UserJobsService } from './user-jobs.service';
 import { JobPost } from '../job-post/entities/job-post.entity';
 import { User } from '../user/entities/user.entity';
+import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserJob, JobPost, User])],
+  imports: [TypeOrmModule.forFeature([UserJob, JobPost, User, JobSeeker])],
   controllers: [UserJobsController],
   providers: [UserJobsService],
   exports: [UserJobsService],

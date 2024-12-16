@@ -54,6 +54,7 @@ export class UserJobsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
+  @Roles(Role.Employer)
   @ApiOperation({
     summary: 'Get all job applications with pagination and filters',
   })

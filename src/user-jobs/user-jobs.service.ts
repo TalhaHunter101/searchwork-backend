@@ -15,6 +15,7 @@ import { UserJobFilterDto } from './dto/user-job-filter.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 import { Role, Status } from '../utils/constants/constants';
 import { SortOrder } from '../common/dto/pagination.dto';
+import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 
 @Injectable()
 export class UserJobsService {
@@ -23,6 +24,8 @@ export class UserJobsService {
     private readonly userJobRepository: Repository<UserJob>,
     @InjectRepository(JobPost)
     private readonly jobPostRepository: Repository<JobPost>,
+    @InjectRepository(JobSeeker)
+    private readonly jobSeekerRepository: Repository<JobSeeker>,
   ) {}
 
   async create(
@@ -31,7 +34,11 @@ export class UserJobsService {
   ): Promise<UserJob> {
     console.log(createUserJobDto, user, '=============================')
     // Verify user has a job seeker profile
-    if (!user.jobSeekerProfile) {
+    const jobSeeker = await this.jobSeekerRepository.findOne({
+      where: { user: { id: user.id } }, // Match using the related user's ID
+    });
+  
+    if (!jobSeeker) {
       throw new BadRequestException(
         'You must create a job seeker profile before applying to jobs',
       );
@@ -61,7 +68,7 @@ export class UserJobsService {
     const userJob = this.userJobRepository.create({
       jobPost,
       user,
-      status: Status.Applied, //default
+      status: Status.Applied, // Default status
       appliedAt: new Date(),
     });
 
@@ -88,22 +95,25 @@ export class UserJobsService {
       .leftJoinAndSelect('userJob.jobPost', 'jobPost')
       .leftJoinAndSelect('userJob.user', 'user')
       .leftJoinAndSelect('jobPost.employer', 'employer');
-
-    // If employee, show only their applications
-    if (user.role === Role.Employee) {
-      queryBuilder.andWhere('userJob.user.id = :userId', { userId: user.id });
-    }
-    // If employer, show only applications for their job posts
-    else if (user.role === Role.Employer) {
-      queryBuilder.andWhere('employer.user.id = :userId', { userId: user.id });
+  
+    console.log('Filter DTO:', filterDto);
+    console.log('Logged-in User:', user);
+  
+    // Ensure only employers can view applications for their jobs
+    if (user.role === Role.Employer) {
+      queryBuilder.andWhere('employer.id = :employerId', { employerId: user.id });
+  
+      if (jobPostId) {
+        queryBuilder.andWhere('jobPost.id = :jobPostId', { jobPostId });
+      }
+    } else {
+      throw new UnauthorizedException(
+        'You are not authorized to view job applications.',
+      );
     }
 
     if (status) {
       queryBuilder.andWhere('userJob.status = :status', { status });
-    }
-
-    if (jobPostId) {
-      queryBuilder.andWhere('jobPost.id = :jobPostId', { jobPostId });
     }
 
     if (appliedAfter) {
@@ -125,7 +135,10 @@ export class UserJobsService {
       .skip(skip)
       .take(limit)
       .getManyAndCount();
-
+  
+    console.log('Generated SQL:', queryBuilder.getSql());
+    console.log('Result Items:', items);
+  
     return {
       items,
       meta: {
@@ -136,6 +149,7 @@ export class UserJobsService {
       },
     };
   }
+  
 
   async findOne(id: number, user: User): Promise<UserJob> {
     const userJob = await this.userJobRepository.findOne({
@@ -152,24 +166,32 @@ export class UserJobsService {
       throw new NotFoundException('Job application not found');
     }
 
-    // Verify the user has a job seeker profile
-    if (!userJob.user.jobSeekerProfile) {
+    // Verify the user has a job seeker profile using the `jobSeekerRepository`
+    const jobSeeker = await this.jobSeekerRepository.findOne({
+      where: { user: { id: user.id } },
+    });
+  
+    if (!jobSeeker) {
       throw new BadRequestException('User does not have a job seeker profile');
     }
-
+  
     // Check permissions
-    if (
-      (user.role === Role.Employee && userJob.user.id !== user.id) ||
-      (user.role === Role.Employer &&
-        userJob.jobPost.employer.user.id !== user.id)
-    ) {
+    const isEmployeeViewingOwnApplication =
+      user.role === Role.Employee && userJob.user.id === user.id;
+  
+    const isEmployerViewingOwnJobPost =
+      user.role === Role.Employer &&
+      userJob.jobPost.employer.user.id === user.id;
+  
+    if (!isEmployeeViewingOwnApplication && !isEmployerViewingOwnJobPost) {
       throw new UnauthorizedException(
         'You do not have permission to view this application',
       );
     }
-
+  
     return userJob;
   }
+  
 
   async update(
     id: number,
