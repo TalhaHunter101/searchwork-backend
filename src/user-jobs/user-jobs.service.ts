@@ -29,6 +29,7 @@ export class UserJobsService {
     createUserJobDto: CreateUserJobDto,
     user: User,
   ): Promise<UserJob> {
+    console.log(createUserJobDto, user, '=============================')
     // Verify user has a job seeker profile
     if (!user.jobSeekerProfile) {
       throw new BadRequestException(
@@ -203,25 +204,29 @@ export class UserJobsService {
   }
 
   async findByJobPost(jobPostId: number, user: User): Promise<UserJob[]> {
+    console.log('jobPostId:', jobPostId, 'user:', user);
+  
+    // Fetch the job post with its applications and related users
     const jobPost = await this.jobPostRepository.findOne({
       where: { id: jobPostId },
-      relations: ['employer'],
+      relations: ['userJobs', 'userJobs.user'],
     });
-
+  
+    console.log('Fetched jobPost:', jobPost);
+  
     if (!jobPost) {
       throw new NotFoundException('Job post not found');
     }
-
-    // Only the employer who owns the job post can view all applications
-    if (jobPost.employer.user.id !== user.id) {
+  
+    // Authorization: Ensure the logged-in user is the employer of this job post
+    if (!user || user.id !== jobPost.employerId) {
       throw new UnauthorizedException(
         'You can only view applications for your own job posts',
       );
     }
-
-    return this.userJobRepository.find({
-      where: { jobPost: { id: jobPostId } },
-      relations: ['user', 'jobPost'],
-    });
+  
+    // Return all applications
+    return jobPost.userJobs;
   }
+  
 }

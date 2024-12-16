@@ -27,14 +27,17 @@ export class JobPostService {
     private locationRepository: Repository<Location>,
   ) {}
 
-  async create(createJobPostDto: CreateJobPostDto, user: User) {
+  async create(createJobPostDto: CreateJobPostDto, user: User) {    
+    if (user.role !== 'employer') {
+      throw new NotFoundException('User is not an employer');
+    }
     const employer = await this.employerRepository.findOne({
       where: { user: { id: user.id } }, // Match the user ID from the request
       relations: ['user'], // Include the related user if needed
     });
 
     if (!employer) {
-      throw new NotFoundException('Employer not found');
+      throw new NotFoundException('Employer profile not found');
     }
 
     // Create a new job post

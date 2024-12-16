@@ -23,7 +23,7 @@ export class Initial1734117649345 implements MigrationInterface {
       `CREATE TABLE "user_job" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "status" "public"."user_job_status_enum" NOT NULL DEFAULT 'applied', "applied_at" TIMESTAMP NOT NULL DEFAULT now(), "job_post_id" integer NOT NULL, "user_id" integer NOT NULL, CONSTRAINT "UQ_cc98833a77eed71880f529f56b6" UNIQUE ("user_id", "job_post_id"), CONSTRAINT "PK_7e956aacee9897fbe87c9df4cc5" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TYPE "public"."job_post_type_enum" AS ENUM('full_time', 'part_time', 'contract', 'freelance')`,
+      `CREATE TYPE "public"."job_post_type_enum" AS ENUM('_time', 'part_time', 'contract', 'freelance')`,
     );
     await queryRunner.query(
       `CREATE TYPE "public"."job_post_availability_enum" AS ENUM('remote', 'on_site', 'hybrid')`,

@@ -35,12 +35,13 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     try {
       const user = await this.authService.validateUser(loginDto);
-      if (user) {
-        return this.authService.login(user);
-      } else {
+      if (!user) {
         throw new BadRequestException('Invalid credentials');
       }
+        return this.authService.login(user);
+  
     } catch (error) {
+      console.error('Login error:', error.message);
       throw new BadRequestException(error.message || 'Login failed');
     }
   }

@@ -27,7 +27,6 @@ export class JobSeekerService {
       throw new NotFoundException('User not found');
     }
 
-    // Check if user already has a job seeker profile
     const existingProfile = await this.jobSeekerRepository.findOne({
       where: { user: { id: userId } },
     });
@@ -60,7 +59,7 @@ export class JobSeekerService {
     const queryBuilder = this.jobSeekerRepository
       .createQueryBuilder('jobSeeker')
       .leftJoinAndSelect('jobSeeker.user', 'user')
-      .leftJoinAndSelect('jobSeeker.userJobs', 'userJobs');
+      .leftJoinAndSelect('user.userJobs', 'userJobs');
 
     if (skills) {
       queryBuilder.andWhere('LOWER(jobSeeker.skills) LIKE LOWER(:skills)', {
@@ -81,12 +80,12 @@ export class JobSeekerService {
     }
 
     if (userId) {
-      queryBuilder.andWhere('jobSeeker.user.id = :userId', { userId });
+      queryBuilder.andWhere('user.id = :userId', { userId });
     }
 
     if (search) {
       queryBuilder.andWhere(
-        '(LOWER(jobSeeker.skills) LIKE LOWER(:search) OR LOWER(jobSeeker.professionalExperience) LIKE LOWER(:search))',
+        '(LOWER(jobSeeker.skills) LIKE LOWER(:search) OR  LOWER(jobSeeker.professionalExperience) LIKE LOWER(:search))',
         { search: `%${search}%` },
       );
     }
@@ -113,7 +112,7 @@ export class JobSeekerService {
   async findOne(id: number): Promise<JobSeeker> {
     const jobSeeker = await this.jobSeekerRepository.findOne({
       where: { id },
-      relations: ['user', 'userJobs'],
+      relations: ['user', 'user.userJobs'],
     });
 
     if (!jobSeeker) {
@@ -130,7 +129,6 @@ export class JobSeekerService {
   ): Promise<JobSeeker> {
     const jobSeeker = await this.findOne(id);
 
-    // Check if the user owns this profile
     if (jobSeeker.user.id !== user.id) {
       throw new UnauthorizedException('You can only update your own profile');
     }
