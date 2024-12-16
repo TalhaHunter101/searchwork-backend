@@ -39,7 +39,10 @@ export class UserJobsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Employee)
-  @ApiOperation({ summary: 'Apply for a job' })
+  @ApiOperation({
+    summary: 'Apply for a job',
+    description: 'Allows employees to submit job applications',
+  })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Application submitted successfully',
@@ -53,14 +56,19 @@ export class UserJobsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @Roles(Role.Employer)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee, Role.Employer, Role.Admin)
   @ApiOperation({
-    summary: 'Get all job applications with pagination and filters',
+    summary: 'Get job applications with pagination and filters',
+    description:
+      'Access levels:\n' +
+      '- Employees: Can only view their own applications\n' +
+      '- Employers: Can only view applications for their posted jobs\n' +
+      '- Admin: Can view all applications in the system',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns paginated job applications',
+    description: 'Returns paginated job applications based on user role access',
     type: UserJobResponseDto,
   })
   findAll(
@@ -71,11 +79,19 @@ export class UserJobsController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get job application by ID' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee, Role.Employer, Role.Admin)
+  @ApiOperation({
+    summary: 'Get job application by ID',
+    description:
+      'Access levels:\n' +
+      '- Employees: Can only view their own application\n' +
+      '- Employers: Can only view applications for their posted jobs\n' +
+      '- Admin: Can view any application',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns the job application',
+    description: 'Returns the job application if user has permission',
     type: UserJobResponseDto,
   })
   findOne(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
@@ -84,8 +100,14 @@ export class UserJobsController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Employer)
-  @ApiOperation({ summary: 'Update job application status (Employer only)' })
+  @Roles(Role.Employer, Role.Admin)
+  @ApiOperation({
+    summary: 'Update job application status',
+    description:
+      'Access levels:\n' +
+      '- Employers: Can only update applications for their posted jobs\n' +
+      '- Admin: Can update any application status',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Application status updated successfully',
@@ -100,11 +122,18 @@ export class UserJobsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Withdraw job application' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee, Role.Admin)
+  @ApiOperation({
+    summary: 'Withdraw/Delete job application',
+    description:
+      'Access levels:\n' +
+      '- Employees: Can only withdraw their own applications\n' +
+      '- Admin: Can delete any application',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Application withdrawn successfully',
+    description: 'Application withdrawn/deleted successfully',
   })
   remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     return this.userJobsService.remove(id, user);
@@ -112,13 +141,18 @@ export class UserJobsController {
 
   @Get('job/:jobId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Employer)
+  @Roles(Role.Employer, Role.Admin)
   @ApiOperation({
-    summary: 'Get all applications for a specific job post (Employer only)',
+    summary: 'Get all applications for a specific job post',
+    description:
+      'Access levels:\n' +
+      '- Employers: Can only view applications for their own job posts\n' +
+      '- Admin: Can view applications for any job post',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns all applications for the job post',
+    description:
+      'Returns all applications for the job post if user has permission',
     type: [UserJobResponseDto],
   })
   findByJobPost(

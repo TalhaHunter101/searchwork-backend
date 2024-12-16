@@ -38,8 +38,7 @@ export class AuthController {
       if (!user) {
         throw new BadRequestException('Invalid credentials');
       }
-        return this.authService.login(user);
-  
+      return this.authService.login(user);
     } catch (error) {
       console.error('Login error:', error.message);
       throw new BadRequestException(error.message || 'Login failed');

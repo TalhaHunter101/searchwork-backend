@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,7 +14,6 @@ import { UserJobFilterDto } from './dto/user-job-filter.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 import { Role, Status } from '../utils/constants/constants';
 import { SortOrder } from '../common/dto/pagination.dto';
-import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 
 @Injectable()
 export class UserJobsService {
@@ -24,29 +22,15 @@ export class UserJobsService {
     private readonly userJobRepository: Repository<UserJob>,
     @InjectRepository(JobPost)
     private readonly jobPostRepository: Repository<JobPost>,
-    @InjectRepository(JobSeeker)
-    private readonly jobSeekerRepository: Repository<JobSeeker>,
   ) {}
 
   async create(
     createUserJobDto: CreateUserJobDto,
     user: User,
   ): Promise<UserJob> {
-    console.log(createUserJobDto, user, '=============================')
-    // Verify user has a job seeker profile
-    const jobSeeker = await this.jobSeekerRepository.findOne({
-      where: { user: { id: user.id } }, // Match using the related user's ID
-    });
-  
-    if (!jobSeeker) {
-      throw new BadRequestException(
-        'You must create a job seeker profile before applying to jobs',
-      );
-    }
-
+    // Profile check is handled by guard
     const jobPost = await this.jobPostRepository.findOne({
       where: { id: createUserJobDto.jobPostId },
-      relations: ['employer'],
     });
 
     if (!jobPost) {
@@ -66,9 +50,10 @@ export class UserJobsService {
     }
 
     const userJob = this.userJobRepository.create({
-      jobPost,
+      ...createUserJobDto,
       user,
-      status: Status.Applied, // Default status
+      jobPost,
+      status: Status.Applied,
       appliedAt: new Date(),
     });
 
@@ -95,25 +80,41 @@ export class UserJobsService {
       .leftJoinAndSelect('userJob.jobPost', 'jobPost')
       .leftJoinAndSelect('userJob.user', 'user')
       .leftJoinAndSelect('jobPost.employer', 'employer');
-  
+
     console.log('Filter DTO:', filterDto);
     console.log('Logged-in User:', user);
-  
-    // Ensure only employers can view applications for their jobs
-    if (user.role === Role.Employer) {
-      queryBuilder.andWhere('employer.id = :employerId', { employerId: user.id });
-  
-      if (jobPostId) {
-        queryBuilder.andWhere('jobPost.id = :jobPostId', { jobPostId });
-      }
-    } else {
-      throw new UnauthorizedException(
-        'You are not authorized to view job applications.',
-      );
+
+    // Apply role-based filters
+    switch (user.role) {
+      case Role.Employee:
+        // Employees can only see their own applications
+        queryBuilder.andWhere('user.id = :userId', { userId: user.id });
+        break;
+
+      case Role.Employer:
+        // Employers can only see applications for their jobs
+        queryBuilder.andWhere('employer.user.id = :employerId', {
+          employerId: user.id,
+        });
+        break;
+
+      case Role.Admin:
+        // Admin can see all applications
+        break;
+
+      default:
+        throw new UnauthorizedException(
+          'Invalid role for viewing applications',
+        );
     }
 
+    // Apply additional filters
     if (status) {
       queryBuilder.andWhere('userJob.status = :status', { status });
+    }
+
+    if (jobPostId) {
+      queryBuilder.andWhere('jobPost.id = :jobPostId', { jobPostId });
     }
 
     if (appliedAfter) {
@@ -135,10 +136,10 @@ export class UserJobsService {
       .skip(skip)
       .take(limit)
       .getManyAndCount();
-  
+
     console.log('Generated SQL:', queryBuilder.getSql());
     console.log('Result Items:', items);
-  
+
     return {
       items,
       meta: {
@@ -149,7 +150,6 @@ export class UserJobsService {
       },
     };
   }
-  
 
   async findOne(id: number, user: User): Promise<UserJob> {
     const userJob = await this.userJobRepository.findOne({
@@ -159,6 +159,7 @@ export class UserJobsService {
         'user',
         'user.jobSeekerProfile',
         'jobPost.employer',
+        'jobPost.employer.user',
       ],
     });
 
@@ -166,45 +167,70 @@ export class UserJobsService {
       throw new NotFoundException('Job application not found');
     }
 
-    // Verify the user has a job seeker profile using the `jobSeekerRepository`
-    const jobSeeker = await this.jobSeekerRepository.findOne({
-      where: { user: { id: user.id } },
-    });
-  
-    if (!jobSeeker) {
-      throw new BadRequestException('User does not have a job seeker profile');
+    // Check permissions based on role
+    switch (user.role) {
+      case Role.Employee:
+        // Employees can only view their own applications
+        if (userJob.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You can only view your own applications',
+          );
+        }
+        break;
+
+      case Role.Employer:
+        // Employers can only view applications for their jobs
+        if (userJob.jobPost.employer.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You can only view applications for your own job posts',
+          );
+        }
+        break;
+
+      case Role.Admin:
+        break;
+
+      default:
+        throw new UnauthorizedException(
+          'Invalid role for viewing applications',
+        );
     }
-  
-    // Check permissions
-    const isEmployeeViewingOwnApplication =
-      user.role === Role.Employee && userJob.user.id === user.id;
-  
-    const isEmployerViewingOwnJobPost =
-      user.role === Role.Employer &&
-      userJob.jobPost.employer.user.id === user.id;
-  
-    if (!isEmployeeViewingOwnApplication && !isEmployerViewingOwnJobPost) {
-      throw new UnauthorizedException(
-        'You do not have permission to view this application',
-      );
-    }
-  
+
     return userJob;
   }
-  
 
   async update(
     id: number,
     updateUserJobDto: UpdateUserJobDto,
     user: User,
   ): Promise<UserJob> {
-    const userJob = await this.findOne(id, user);
+    const userJob = await this.userJobRepository.findOne({
+      where: { id },
+      relations: ['jobPost', 'jobPost.employer', 'jobPost.employer.user'],
+    });
 
-    // Only employer who owns the job post can update status
-    if (userJob.jobPost.employer.user.id !== user.id) {
-      throw new UnauthorizedException(
-        'You can only update applications for your own job posts',
-      );
+    if (!userJob) {
+      throw new NotFoundException('Job application not found');
+    }
+
+    // Check permissions based on role
+    switch (user.role) {
+      case Role.Employer:
+        // Employers can only update applications for their jobs
+        if (userJob.jobPost.employer.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You can only update applications for your own job posts',
+          );
+        }
+        break;
+
+      case Role.Admin:
+        break;
+
+      default:
+        throw new UnauthorizedException(
+          'You do not have permission to update applications',
+        );
     }
 
     Object.assign(userJob, updateUserJobDto);
@@ -212,13 +238,33 @@ export class UserJobsService {
   }
 
   async remove(id: number, user: User): Promise<{ message: string }> {
-    const userJob = await this.findOne(id, user);
+    const userJob = await this.userJobRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
 
-    // Only the applicant can withdraw their application
-    if (userJob.user.id !== user.id) {
-      throw new UnauthorizedException(
-        'You can only withdraw your own applications',
-      );
+    if (!userJob) {
+      throw new NotFoundException('Job application not found');
+    }
+
+    // Check permissions based on role
+    switch (user.role) {
+      case Role.Employee:
+        // Employees can only withdraw their own applications
+        if (userJob.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You can only withdraw your own applications',
+          );
+        }
+        break;
+
+      case Role.Admin:
+        break;
+
+      default:
+        throw new UnauthorizedException(
+          'You do not have permission to delete applications',
+        );
     }
 
     await this.userJobRepository.remove(userJob);
@@ -226,29 +272,36 @@ export class UserJobsService {
   }
 
   async findByJobPost(jobPostId: number, user: User): Promise<UserJob[]> {
-    console.log('jobPostId:', jobPostId, 'user:', user);
-  
-    // Fetch the job post with its applications and related users
     const jobPost = await this.jobPostRepository.findOne({
       where: { id: jobPostId },
-      relations: ['userJobs', 'userJobs.user'],
+      relations: ['employer', 'employer.user', 'userJobs', 'userJobs.user'],
     });
-  
-    console.log('Fetched jobPost:', jobPost);
-  
+
     if (!jobPost) {
       throw new NotFoundException('Job post not found');
     }
-  
-    // Authorization: Ensure the logged-in user is the employer of this job post
-    if (!user || user.id !== jobPost.employerId) {
-      throw new UnauthorizedException(
-        'You can only view applications for your own job posts',
-      );
+
+    // Check permissions based on role
+    switch (user.role) {
+      case Role.Employer:
+        // Employers can only view applications for their jobs
+        if (jobPost.employer.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You can only view applications for your own job posts',
+          );
+        }
+        break;
+
+      case Role.Admin:
+        // Admin can view applications for any job post
+        break;
+
+      default:
+        throw new UnauthorizedException(
+          'You do not have permission to view these applications',
+        );
     }
-  
-    // Return all applications
+
     return jobPost.userJobs;
   }
-  
 }

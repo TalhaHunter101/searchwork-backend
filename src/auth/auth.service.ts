@@ -54,11 +54,11 @@ export class AuthService {
       where: { email: loginDto.email },
       select: ['id', 'email', 'password', 'isEmailVerified', 'role'], // Explicitly include the password
     });
-    
+
     if (!user || !user.password) {
       throw new BadRequestException('Invalid email or password');
     }
-  
+
     if (await bcrypt.compare(loginDto.password, user.password)) {
       return user;
     }

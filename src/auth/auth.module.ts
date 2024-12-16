@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserModule } from '../user/user.module';
 import { PassportModule } from '@nestjs/passport';
@@ -9,11 +9,14 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../user/entities/user.entity';
 import { MailService } from '../services/mailService';
+import { Employer } from '../employer/entities/employer.entity';
+import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
-    UserModule,
+    TypeOrmModule.forFeature([User, Employer, JobSeeker]),
+    forwardRef(() => UserModule),
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -23,8 +26,8 @@ import { MailService } from '../services/mailService';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, MailService],
+  providers: [AuthService, JwtStrategy, MailService, RolesGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, RolesGuard],
 })
 export class AuthModule {}
