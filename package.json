@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "start": "npm run migration:run && nest start",
     "migration:run": "npm run build && npx typeorm-ts-node-commonjs migration:run -d db/data-source.ts",
     "start:dev": "nest start --watch --preserveWatchOutput",
     "start:debug": "nest start --debug --watch",
