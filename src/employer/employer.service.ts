@@ -3,11 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Employer } from './entities/employer.entity';
 import { CreateEmployerDto } from './dto/create-employer.dto';
-import { UpdateEmployerDto } from './dto/update-employer.dto';
+import { UpdateEmployerDto, UpdateToggleProfileVisibility } from './dto/update-employer.dto';
 import { User } from '../user/entities/user.entity';
 import { EmployerFilterDto } from './dto/employer-filter.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 import { SortOrder } from '../common/dto/pagination.dto';
+import { Preferences } from '../user/entities/preferences.entity';
 
 @Injectable()
 export class EmployerService {
@@ -16,6 +17,8 @@ export class EmployerService {
     private readonly employerRepository: Repository<Employer>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Preferences)
+    private readonly preferencesRepository: Repository<Preferences>,
   ) {}
 
   async create(userId: number, createEmployerDto: CreateEmployerDto): Promise<Employer> {
@@ -136,6 +139,22 @@ export class EmployerService {
 
     Object.assign(employer, updateEmployerDto);
     return await this.employerRepository.save(employer);
+  }
+
+  async updateEmployer(id: number, updateToggleProfileVisibility: UpdateToggleProfileVisibility) {
+    console.log(id, updateToggleProfileVisibility, '----------------');
+    const preferences = await this.preferencesRepository.findOne({
+      where: {user: { id: id } },
+      relations: ['user'],
+    });
+    console.log(preferences, '00000000');
+    if (!preferences) {
+      throw new NotFoundException('Preferences not found');
+    }
+    
+    Object.assign(preferences, updateToggleProfileVisibility);
+    console.log(preferences, updateToggleProfileVisibility);
+    return this.preferencesRepository.save(preferences);
   }
 
   async remove(id: number, user: User): Promise<{ message: string }> {

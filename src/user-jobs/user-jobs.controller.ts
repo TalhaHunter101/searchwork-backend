@@ -29,12 +29,22 @@ import { Role } from '../utils/constants/constants';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../user/entities/user.entity';
 import { UserJobResponseDto } from './dto/user-job-response.dto';
+import { SaveJobDto } from './dto/save-job.dto';
+import { Status } from '../utils/constants/constants';
 
 @ApiTags('user-jobs')
 @ApiBearerAuth('JWT-auth')
 @Controller('user-jobs')
 export class UserJobsController {
   constructor(private readonly userJobsService: UserJobsService) {}
+
+  @Get('savedJobs')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Get all saved jobs' })
+  getSavedJobs(@GetUser() user: User) {
+    return this.userJobsService.getSavedJobs(user);
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -160,5 +170,65 @@ export class UserJobsController {
     @GetUser() user: User,
   ) {
     return this.userJobsService.findByJobPost(jobId, user);
+  }
+
+  @Post('save')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Save a job for later' })
+  saveJob(@Body(ValidationPipe) saveJobDto: SaveJobDto, @GetUser() user: User) {
+    return this.userJobsService.saveJob(saveJobDto.jobPostId, user);
+  }
+
+  @Delete('save/:jobPostId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Remove a saved job' })
+  unsaveJob(
+    @Param('jobPostId', ParseIntPipe) jobPostId: number,
+    @GetUser() user: User,
+  ) {
+    return this.userJobsService.unsaveJob(jobPostId, user);
+  }
+
+  @Get('applications/status/:status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Get applications by status' })
+  getApplicationsByStatus(
+    @Param('status') status: Status,
+    @GetUser() user: User,
+  ) {
+    return this.userJobsService.getApplicationsByStatus(user, status);
+  }
+
+  @Patch('view/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer, Role.Admin)
+  @ApiOperation({
+    summary: 'Mark job application as viewed',
+    description:
+      'Allows employers to mark an application as viewed when they access it.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Application marked as viewed successfully',
+    type: UserJobResponseDto,
+  })
+  markAsViewed(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ) {
+    console.log(id,'user', user);
+    return this.userJobsService.markAsViewed(id, user);
+  }
+
+
+  @Delete('history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employee)
+  @ApiOperation({ summary: 'Clear saved jobs history' })
+  clearJobHistory(@GetUser() user: User) {
+    return this.userJobsService.clearJobHistory(user);
   }
 }

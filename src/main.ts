@@ -7,7 +7,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api/v2');
-
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.use(express.json());
   const config = new DocumentBuilder()
     .setTitle('SearchWork API')
@@ -26,7 +27,7 @@ async function bootstrap() {
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('', app, document);
 
   const PORT = parseInt(process.env.PORT || '3000', 10); // Default to 3000 if PORT is not set
   await app.listen(PORT, () => {

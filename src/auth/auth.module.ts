@@ -12,10 +12,14 @@ import { MailService } from '../services/mailService';
 import { Employer } from '../employer/entities/employer.entity';
 import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 import { RolesGuard } from './guards/roles.guard';
+import { UserService } from '../user/user.service';
+import { D7NetworksService } from '../utils/d7-networks/d7.service';
+import { S3Service } from '../utils/s3Services/s3Services';
+import { Preferences } from '../user/entities/preferences.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Employer, JobSeeker]),
+    TypeOrmModule.forFeature([User, Employer, JobSeeker, Preferences]),
     forwardRef(() => UserModule),
     PassportModule,
     JwtModule.registerAsync({
@@ -26,7 +30,7 @@ import { RolesGuard } from './guards/roles.guard';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, MailService, RolesGuard],
+  providers: [AuthService, JwtStrategy, MailService, RolesGuard, UserService, D7NetworksService, S3Service],
   controllers: [AuthController],
   exports: [AuthService, RolesGuard],
 })

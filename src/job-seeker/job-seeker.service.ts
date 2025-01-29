@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   NotFoundException,
@@ -14,12 +13,16 @@ import { JobSeekerFilterDto } from './dto/job-seeker-filter.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 import { SortOrder } from '../common/dto/pagination.dto';
 import { Role } from '../utils/constants/constants';
+import { S3Service } from '../utils/s3Services/s3Services';
 
 @Injectable()
 export class JobSeekerService {
   constructor(
     @InjectRepository(JobSeeker)
     private readonly jobSeekerRepository: Repository<JobSeeker>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly s3Service: S3Service,
   ) {}
 
   async findAll(
@@ -127,14 +130,33 @@ export class JobSeekerService {
     if (existingProfile) {
       throw new UnauthorizedException('User already has a job seeker profile');
     }
-
+  
+    // let profileImageUrl: string | undefined;
+    // if (createJobSeekerDto.image) {
+    //   const uploadResult = await this.s3Service.uploadFile({
+    //     imageObject: {
+    //       path: `users/${user.id}/profile.jpg`,
+    //       data: createJobSeekerDto.image,
+    //       mime: 'image/jpeg',
+    //     },
+    //   });
+  
+    //   profileImageUrl = uploadResult.Location;
+    // }
+  
+    // if (profileImageUrl) {
+    //   user.profileImageUrl = profileImageUrl;
+    //   await this.userRepository.save(user);
+    // }
+  
     const newJobSeeker = this.jobSeekerRepository.create({
       ...createJobSeekerDto,
       user,
     });
-
+  
     return await this.jobSeekerRepository.save(newJobSeeker);
   }
+  
 
   async update(
     id: number,

@@ -29,33 +29,35 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    // If admin role is allowed and user is admin, allow access
     if (roles.includes(Role.Admin) && user.role === Role.Admin) {
       return true;
     }
 
-    // Check for employer role and profile
     if (roles.includes(Role.Employer) && user.role === Role.Employer) {
+      if (context.getHandler().name === 'create') {
+        return true;
+      }
       const employer = await this.employerRepository.findOne({
         where: { user: { id: user.id } },
       });
       if (!employer) {
         return false;
       }
-      // Attach employer profile to request for service use
       request.employerProfile = employer;
       return true;
     }
 
-    // Check for employee role and job seeker profile
     if (roles.includes(Role.Employee) && user.role === Role.Employee) {
+      if (context.getHandler().name === 'create') {
+        return true;
+      }
+
       const jobSeeker = await this.jobSeekerRepository.findOne({
         where: { user: { id: user.id } },
       });
       if (!jobSeeker) {
         return false;
       }
-      // Attach job seeker profile to request for service use
       request.jobSeekerProfile = jobSeeker;
       return true;
     }

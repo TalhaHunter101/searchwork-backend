@@ -8,14 +8,25 @@ import { User } from '../user/entities/user.entity';
 import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 import { AuthModule } from '../auth/auth.module';
 import { Employer } from '../employer/entities/employer.entity';
+import { SavedJob } from './entities/saved-job.entity';
+import { Notification } from '..//notifications/entities/notification.entity';
+import { MailService } from '../services/mailService';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserJob, JobPost, User, JobSeeker, Employer]),
+    TypeOrmModule.forFeature([
+      UserJob,
+      JobPost,
+      User,
+      JobSeeker,
+      Employer,
+      SavedJob,
+      Notification
+    ]),
     AuthModule,
   ],
   controllers: [UserJobsController],
-  providers: [UserJobsService],
+  providers: [UserJobsService, MailService],
   exports: [UserJobsService],
 })
 export class UserJobsModule {}

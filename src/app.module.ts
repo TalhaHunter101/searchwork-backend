@@ -11,6 +11,11 @@ import { JobSeekerModule } from './job-seeker/job-seeker.module';
 import { EmployerModule } from './employer/employer.module';
 import { UserJobsModule } from './user-jobs/user-jobs.module';
 import { LocationModule } from './location/location.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { S3Service } from './utils/s3Services/s3Services';
+import { NotificationsModule } from './notifications/notifications.module';
+import { User } from './user/entities/user.entity';
 
 @Module({
   imports: [
@@ -19,15 +24,23 @@ import { LocationModule } from './location/location.module';
       isGlobal: true,
       envFilePath: ['.env'],
     }),
+    TypeOrmModule.forRoot(dataSourceOptions),
+    TypeOrmModule.forFeature([User]),
     AuthModule,
     UserModule,
-    TypeOrmModule.forRoot(dataSourceOptions),
     JobPostModule,
     JobSeekerModule,
     EmployerModule,
     UserJobsModule,
     LocationModule,
+    NotificationsModule,
   ],
-  providers: [{ provide: APP_INTERCEPTOR, useClass: Logger }],
+  controllers: [AppController],
+
+  providers: [
+    AppService,
+    S3Service,
+    { provide: APP_INTERCEPTOR, useClass: Logger },
+  ],
 })
 export class AppModule {}
