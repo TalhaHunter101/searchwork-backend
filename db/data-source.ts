@@ -22,12 +22,39 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  entities: [Location, User, JobSeeker, Employer, JobPost, UserJob, Feedback, SupportTicket, SavedJob, Notification, Preferences],
+  entities: [
+    Location,
+    User,
+    JobSeeker,
+    Employer,
+    JobPost,
+    UserJob,
+    Feedback,
+    SupportTicket,
+    SavedJob,
+    Notification,
+    Preferences,
+  ],
 
   migrations: [__dirname + '/migrations/*.ts'],
   synchronize: false,
   logging: false,
   namingStrategy: new SnakeNamingStrategy(),
+  ssl:
+    process.env.DB_SSL === 'true'
+      ? {
+          rejectUnauthorized: false,
+          ca: process.env.DB_CA_CERT,
+        }
+      : false,
+  extra: {
+    ssl:
+      process.env.DB_SSL === 'true'
+        ? {
+            rejectUnauthorized: false,
+          }
+        : false,
+  },
 };
 
 const dataSource = new DataSource(dataSourceOptions);
