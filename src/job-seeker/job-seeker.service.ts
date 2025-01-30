@@ -173,26 +173,4 @@ export class JobSeekerService {
     await this.jobSeekerRepository.remove(jobSeeker);
     return { message: 'Job seeker profile removed successfully' };
   }
-
-  async createJobSeekerProfile(user: User): Promise<JobSeeker> {
-    const existingProfile = await this.jobSeekerRepository.findOne({
-      where: { user: { id: user.id } },
-    });
-  
-    if (existingProfile) {
-      throw new UnauthorizedException('User already has a job seeker profile');
-    }
-  
-    const jobSeekerProfile = this.jobSeekerRepository.create({
-      user,
-      skills: '',
-      professionalExperience: '',
-      qualification: '',
-      majorSubjects: '',
-      certificates: '',
-      certificatesData: '',
-    });
-  
-    return await this.jobSeekerRepository.save(jobSeekerProfile);
-  }
 }

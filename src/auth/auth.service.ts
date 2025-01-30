@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,8 +14,6 @@ import { UserService } from '../user/user.service';
 import { D7NetworksService } from '../utils/d7-networks/d7.service';
 import { S3Service } from '../utils/s3Services/s3Services';
 import { Preferences } from '../user/entities/preferences.entity';
-import { EmployerService } from '../employer/employer.service';
-import { JobSeekerService } from '../job-seeker/job-seeker.service';
 @Injectable()
 export class AuthService {
   constructor(
@@ -28,15 +26,12 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly d7NetworksService: D7NetworksService,
     private readonly s3Service: S3Service,
-    private readonly employerService: EmployerService,
-    private readonly jobseekerService: JobSeekerService,
-
   ) {}
 
 
 
   async register(registerDto: RegisterDto): Promise<User> {
-    const { email, password, fullName, role, gender } = registerDto;
+    const { email, password, fullName, role } = registerDto;
 
     const existingUser = await this.userRepository.findOneBy({ email });
     if (existingUser) {
@@ -52,7 +47,6 @@ export class AuthService {
       fullName,
       password: hashedPassword,
       role,
-      gender,
     });
 
     await this.userRepository.save(user);
@@ -72,9 +66,9 @@ export class AuthService {
     await this.preferencesRepository.save(preferences);
   
     if (role === Role.Employer) {
-      await this.employerService.createEmployerProfile(user);
+      await this.createEmployerProfile(user);
     } else if (role === Role.Employee) {
-      await this.jobseekerService.createJobSeekerProfile(user);
+      await this.createJobSeekerProfile(user);
     }
   
     await this.generateAndSendOtp(user.email);
@@ -267,4 +261,49 @@ export class AuthService {
       await this.mailService.sendVerificationEmail(email, otp);
     }
     return otp;
-  }}
+  }
+
+  private   async createEmployerProfile(user: User): Promise<Employer> {
+    const existingProfile = await this.employerRepository.findOne({
+      where: { user: { id: user.id } },
+    });
+  
+    if (existingProfile) {
+      throw new UnauthorizedException('User already has an employer profile');
+    }
+  
+    const employerProfile = this.employerRepository.create({
+      user,
+      companyName: null,
+      companySize: null,
+      industry: null,
+      bio: null,
+      registrationNumber: null,
+    });
+  
+    return await this.employerRepository.save(employerProfile);
+  }
+
+  private   async createJobSeekerProfile(user: User): Promise<JobSeeker> {
+    const existingProfile = await this.jobSeekerRepository.findOne({
+      where: { user: { id: user.id } },
+    });
+  
+    if (existingProfile) {
+      throw new UnauthorizedException('User already has a job seeker profile');
+    }
+  
+    const jobSeekerProfile = this.jobSeekerRepository.create({
+      user,
+      skills: null,
+      professionalExperience: null,
+      qualification: null,
+      majorSubjects: null,
+      certificates: null,
+      certificatesData: null,
+    });
+  
+    return await this.jobSeekerRepository.save(jobSeekerProfile);
+  }
+}
+  

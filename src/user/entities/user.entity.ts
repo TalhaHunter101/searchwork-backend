@@ -27,7 +27,7 @@ export class User extends BaseEntity {
   @IsOptional()
   @IsString()
   @IsPhoneNumber(null)
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   phoneNumber: string;
 
   @ApiProperty({ example: false })
@@ -59,9 +59,9 @@ export class User extends BaseEntity {
   @Column({ type: 'enum', enum: Role, default: Role.Employee })
   role: Role;
 
-  @ApiProperty({ example: 'Male' })
-  @Column({ type: 'enum', enum: Gender, nullable: true })
-  gender: Gender | null;
+  // @ApiProperty({ example: 'Male' })
+  // @Column({ type: 'enum', enum: Gender, nullable: true })
+  // gender: Gender | null;
 
   @ApiProperty({ example: false })
   @Column({ default: false })

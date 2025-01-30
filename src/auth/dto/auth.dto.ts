@@ -44,16 +44,6 @@ export class RegisterDto {
   @IsEnum(Role)
   @IsNotEmpty()
   role: Role;
-
-  @ApiProperty({
-    enum: Gender,
-    example: Gender.Male,
-    description: 'Gender of the user',
-    required: false,
-  })
-  @IsEnum(Gender)
-  @IsOptional()
-  gender?: Gender;
 }
 
 export class LoginDto {

@@ -10,11 +10,11 @@ export class Employer extends BaseEntity {
     example: 'Hegemonic Inc.',
     description: 'Company Name of the employer',
   })
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: true, unique: true })
   companyName: string;
 
   @ApiProperty({ example: 'IT', description: 'Industry sector of the company' })
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   industry: string;
 
   @ApiProperty({
@@ -38,16 +38,11 @@ export class Employer extends BaseEntity {
   @Column({ nullable: true })
   bio: string;
 
-  // Table relations
-  // One-to-Many relationship with JobPost, allows an employer to have multiple job postings
-  // If the employer is deleted, all associated job posts will also be deleted
   @OneToMany(() => JobPost, (jobPost) => jobPost.employer, {
     onDelete: 'CASCADE',
   })
   jobPosts: JobPost[];
 
-  // One-to-One relationship with User, allows an employer to be associated with a user
-  // If the user is deleted, the associated employer profile will also be deleted
   @OneToOne(() => User, (user) => user.employerProfile, {
     onDelete: 'CASCADE',
   })

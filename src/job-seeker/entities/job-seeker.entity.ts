@@ -56,10 +56,7 @@ export class JobSeeker extends BaseEntity {
   @IsString()
   @Column({ nullable: true })
   certificatesData: string;
-
-  // Table relations
-  // One-to-One relationship with User, allows a job seeker to be associated with a user
-  // If the user is deleted, the associated job seeker profile will also be deleted
+  
   @OneToOne(() => User, (user) => user.jobSeekerProfile, {
     onDelete: 'CASCADE',
   })
