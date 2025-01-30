@@ -16,6 +16,8 @@ import { UserService } from '../user/user.service';
 import { D7NetworksService } from '../utils/d7-networks/d7.service';
 import { S3Service } from '../utils/s3Services/s3Services';
 import { Preferences } from '../user/entities/preferences.entity';
+import { JobSeekerService } from '../job-seeker/job-seeker.service';
+import { EmployerService } from '../employer/employer.service';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { Preferences } from '../user/entities/preferences.entity';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, MailService, RolesGuard, UserService, D7NetworksService, S3Service],
+  providers: [AuthService, JwtStrategy, MailService, RolesGuard, UserService, D7NetworksService, S3Service, EmployerService, JobSeekerService],
   controllers: [AuthController],
   exports: [AuthService, RolesGuard],
 })

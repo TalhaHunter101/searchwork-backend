@@ -14,6 +14,8 @@ import { UserService } from '../user/user.service';
 import { D7NetworksService } from '../utils/d7-networks/d7.service';
 import { S3Service } from '../utils/s3Services/s3Services';
 import { Preferences } from '../user/entities/preferences.entity';
+import { EmployerService } from '../employer/employer.service';
+import { JobSeekerService } from '../job-seeker/job-seeker.service';
 @Injectable()
 export class AuthService {
   constructor(
@@ -26,6 +28,8 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly d7NetworksService: D7NetworksService,
     private readonly s3Service: S3Service,
+    private readonly employerService: EmployerService,
+    private readonly jobseekerService: JobSeekerService,
 
   ) {}
 
@@ -43,7 +47,6 @@ export class AuthService {
     if (!hashedPassword) {
       throw new BadRequestException('Error hashing password');
     }
-
     const user = this.userRepository.create({
       email,
       fullName,
@@ -53,11 +56,12 @@ export class AuthService {
     });
 
     await this.userRepository.save(user);
+
     const preferences = this.preferencesRepository.create({
-      user, // Associate preferences with the user
+      user,
       hideProfileData: false,
       notificationsEnabled: true,
-      theme: 'light', // Default theme can be 'light' or any other value
+      theme: 'light',
       showEmail: true,
       showPhoneNumber: true,
       showLocation: true,
@@ -67,9 +71,14 @@ export class AuthService {
     });
     await this.preferencesRepository.save(preferences);
   
-
+    if (role === Role.Employer) {
+      await this.employerService.createEmployerProfile(user);
+    } else if (role === Role.Employee) {
+      await this.jobseekerService.createJobSeekerProfile(user);
+    }
+  
     await this.generateAndSendOtp(user.email);
-
+  
     return user;
   }
 

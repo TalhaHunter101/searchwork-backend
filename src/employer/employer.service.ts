@@ -167,4 +167,28 @@ export class EmployerService {
     await this.employerRepository.remove(employer);
     return { message: 'Employer profile removed successfully' };
   }
+
+  async createEmployerProfile(user: User): Promise<Employer> {
+    const existingProfile = await this.employerRepository.findOne({
+      where: { user: { id: user.id } },
+    });
+  
+    if (existingProfile) {
+      throw new UnauthorizedException('User already has an employer profile');
+    }
+  
+    const employerProfile = this.employerRepository.create({
+      user,
+      companyName: '',
+      companySize: '',
+      industry: '',
+      bio: '',
+      registrationNumber: '',
+    });
+  
+    return await this.employerRepository.save(employerProfile);
+  }
+  
+  
+  
 }

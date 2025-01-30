@@ -30,4 +30,12 @@ export class CreateEmployerDto {
   @IsOptional()
   @IsString()
   registrationNumber: string;
+  
+  @ApiProperty({
+    example: '1234567890',
+    description: 'Write About Company',
+  })
+  @IsOptional()
+  @IsString()
+  bio: string;
 }
