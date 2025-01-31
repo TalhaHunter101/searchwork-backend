@@ -15,6 +15,9 @@ import { SupportTicket } from './entities/supportTicket.entity';
 import { PreferencesController } from './preferences.controller';
 import { Preferences } from './entities/preferences.entity';
 import { PreferencesService } from './preferences.service';
+import { EmployerService } from '../employer/employer.service';
+import { JobSeekerService } from '../job-seeker/job-seeker.service';
+import { S3Service } from '../utils/s3Services/s3Services';
 
 @Module({
   imports: [
@@ -22,7 +25,7 @@ import { PreferencesService } from './preferences.service';
     forwardRef(() => AuthModule),
   ],
   controllers: [UserController, FeedbackController, SupportTicketController, PreferencesController],
-  providers: [UserService, FeedbackService, SupportTicketService, PreferencesService],
+  providers: [UserService, FeedbackService, SupportTicketService, PreferencesService, EmployerService, JobSeekerService, S3Service],
   exports: [UserService],
 })
 export class UserModule {}

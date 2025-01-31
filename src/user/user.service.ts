@@ -3,6 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,12 +13,20 @@ import { UserFilterDto } from './dto/user-filter.dto';
 import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 import { SortOrder } from '../common/dto/pagination.dto';
 import { Role } from '../utils/constants/constants';
+import { UpdateEmployerDto } from '../employer/dto/update-employer.dto';
+import { UpdateJobSeekerDto } from '../job-seeker/dto/update-job-seeker.dto';
+import { Employer } from '../employer/entities/employer.entity';
+import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Employer)
+    private readonly employerRepository: Repository<Employer>,
+    @InjectRepository(JobSeeker)
+    private readonly jobSeekerRepository: Repository<JobSeeker>,
   ) {}
 
   async findAll(filterDto: UserFilterDto): Promise<PaginatedResponse<User>> {
@@ -101,30 +110,79 @@ export class UserService {
     });
   }
 
+  // async updateUserProfile(
+  //   id: number,
+  //   updateUserDto: UpdateUserProfile,
+  // ): Promise<User> {
+  //   const user = await this.userRepository.findOne({
+  //     where: { id },
+  //     relations: ['jobSeekerProfile', 'employerProfile'],
+  //   });
+
+  //   if (!user) {
+  //     throw new NotFoundException('User not found');
+  //   }
+
+  //   if (
+  //     updateUserDto.email &&
+  //     updateUserDto.email !== user.email &&
+  //     (await this.findOneByEmail(updateUserDto.email))
+  //   ) {
+  //     throw new ConflictException('Email already exists');
+  //   }
+
+  //   Object.assign(user, updateUserDto);
+  //   return await this.userRepository.save(user);
+  // }
+
+
   async updateProfile(
-    id: number,
-    updateUserDto: UpdateUserProfile,
-  ): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id },
+    user: User,
+    updateProfileDto: UpdateUserProfile & Partial<UpdateEmployerDto> & Partial<UpdateJobSeekerDto>,
+  ): Promise<User | Employer | JobSeeker> {
+    const existingUser = await this.userRepository.findOne({
+      where: { id: user.id },
       relations: ['jobSeekerProfile', 'employerProfile'],
     });
-
-    if (!user) {
+  
+    if (!existingUser) {
       throw new NotFoundException('User not found');
     }
-
-    if (
-      updateUserDto.email &&
-      updateUserDto.email !== user.email &&
-      (await this.findOneByEmail(updateUserDto.email))
-    ) {
-      throw new ConflictException('Email already exists');
+  
+    // Update general user fields if provided
+    const userFields = ['email', 'fullName', 'address', 'profilePicture'];
+    let isUserUpdated = false;
+    for (const field of userFields) {
+      if (field in updateProfileDto) {
+        (existingUser as any)[field] = updateProfileDto[field];
+        isUserUpdated = true;
+      }
     }
-
-    Object.assign(user, updateUserDto);
-    return await this.userRepository.save(user);
+  
+    if (updateProfileDto.email && updateProfileDto.email !== existingUser.email) {
+      const emailExists = await this.findOneByEmail(updateProfileDto.email);
+      if (emailExists) throw new ConflictException('Email already exists');
+    }
+  
+    if (isUserUpdated) {
+      await this.userRepository.save(existingUser);
+    }
+  
+    // Update employer profile if user is an employer
+    if (user.role === Role.Employer && existingUser.employerProfile) {
+      Object.assign(existingUser.employerProfile, updateProfileDto);
+      return await this.employerRepository.save(existingUser.employerProfile);
+    }
+  
+    // Update job seeker profile if user is a job seeker
+    if (user.role === Role.Employee && existingUser.jobSeekerProfile) {
+      Object.assign(existingUser.jobSeekerProfile, updateProfileDto);
+      return await this.jobSeekerRepository.save(existingUser.jobSeekerProfile);
+    }
+  
+    throw new BadRequestException('Invalid update request');
   }
+  
 
   async remove(id: number): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({

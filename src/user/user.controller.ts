@@ -16,6 +16,8 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiBody,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UpdateUserProfile } from './dto/update-user.dto';
@@ -27,12 +29,21 @@ import { Role } from '../utils/constants/constants';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from './entities/user.entity';
 import { UserResponseDto } from './dto/user-response.dto';
+import { EmployerService } from '../employer/employer.service';
+import { JobSeekerService } from '../job-seeker/job-seeker.service';
+import { UpdateEmployerDto } from '../employer/dto/update-employer.dto';
+import { UpdateJobSeekerDto } from '../job-seeker/dto/update-job-seeker.dto';
+import { Employer } from '../employer/entities/employer.entity';
+import { JobSeeker } from '../job-seeker/entities/job-seeker.entity';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService,
+  private readonly employerService: EmployerService,
+  private readonly jobSeekerService: JobSeekerService,
+  ){}
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -60,20 +71,20 @@ export class UserController {
     return this.userService.findOne(id, user);
   }
 
-  @Patch('profile')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Update user profile' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Profile updated successfully',
-    type: UserResponseDto,
-  })
-  updateProfile(
-    @Body(ValidationPipe) updateUserDto: UpdateUserProfile,
-    @GetUser() user: User,
-  ) {
-    return this.userService.updateProfile(user.id, updateUserDto);
-  }
+  // @Patch('profile')
+  // @UseGuards(JwtAuthGuard)
+  // @ApiOperation({ summary: 'Update user profile' })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Profile updated successfully',
+  //   type: UserResponseDto,
+  // })
+  // updateUserProfile(
+  //   @Body(ValidationPipe) updateUserDto: UpdateUserProfile,
+  //   @GetUser() user: User,
+  // ) {
+  //   return this.userService.updateUserProfile(user.id, updateUserDto);
+  // }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -86,4 +97,31 @@ export class UserController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.userService.remove(id);
   }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Update user profile (Employer or Job Seeker)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Profile updated successfully',
+    type: UserResponseDto,
+  })
+  @ApiBody({
+    description: 'Update user profile based on role',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(UpdateUserProfile) },
+        { $ref: getSchemaPath(UpdateEmployerDto) },
+        { $ref: getSchemaPath(UpdateJobSeekerDto) },
+      ],
+    },
+  })
+  async updateProfile(
+    @Body(ValidationPipe) updateProfileDto: UpdateUserProfile & Partial<UpdateEmployerDto> & Partial<UpdateJobSeekerDto>,
+    @GetUser() user: User,
+  ): Promise<User | Employer | JobSeeker> {
+    return this.userService.updateProfile(user, updateProfileDto);
+  }
+  
+
 }
