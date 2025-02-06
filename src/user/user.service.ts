@@ -86,21 +86,21 @@ export class UserService {
     };
   }
 
-  async findOne(id: number, currentUser: User): Promise<User> {
+  async findOne(id: number, currentUser: User) {
     // Users can view their own profile or admin can view any profile
     if (currentUser.id !== id && currentUser.role !== Role.Admin) {
       throw new UnauthorizedException('You can only view your own profile');
     }
 
-    const user = await this.userRepository.findOne({
+    const userData = await this.userRepository.findOne({
       where: { id },
       relations: ['jobSeekerProfile', 'employerProfile', 'userPreferences'],
     });
 
-    if (!user) {
+    if (!userData) {
       throw new NotFoundException('User not found');
     }
-    return user;
+    return {user: userData};
   }
 
   async findOneByEmail(email: string): Promise<User | null> {

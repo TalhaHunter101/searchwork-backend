@@ -97,135 +97,85 @@ export class JobPostService {
       availability,
       minSalary,
       maxSalary,
-      // experienceLevel,
-      // duration,
       status,
       search,
       location,
-      // radius,
     } = filterDto;
 
     const queryBuilder = this.jobPostRepository
       .createQueryBuilder('jobPost')
       .leftJoinAndSelect('jobPost.employer', 'employer')
-      .leftJoinAndSelect('employer.user', 'user');
-    // .leftJoinAndSelect('jobPost.location', 'location');
-
-    // Apply filters without role-based restrictions
+      .leftJoinAndSelect('employer.user', 'user')
+      .leftJoinAndSelect('user.userPreferences', 'userPreferences');
+  
+    // ✅ If the logged-in user is an employer, show only their job posts
+    if (user && user.role === Role.Employer) {
+      queryBuilder.andWhere('employer.user.id = :userId', { userId: user.id });
+    }
+  
+    // Apply filters for both employees and employers
     if (type) {
       queryBuilder.andWhere('jobPost.type = :type', { type });
     }
-
     if (availability) {
-      queryBuilder.andWhere('jobPost.availability = :availability', {
-        availability,
-      });
+      queryBuilder.andWhere('jobPost.availability = :availability', { availability });
     }
-
     if (minSalary) {
       queryBuilder.andWhere('jobPost.salary >= :minSalary', { minSalary });
     }
-
     if (maxSalary) {
       queryBuilder.andWhere('jobPost.salary <= :maxSalary', { maxSalary });
     }
-
-    // if (experienceLevel) {
-    //   queryBuilder.andWhere('jobPost.experienceLevel = :experienceLevel', {
-    //     experienceLevel,
-    //   });
-    // }
-
-    // if (duration) {
-    //   queryBuilder.andWhere('jobPost.duration = :duration', { duration });
-    // }
-
     if (status) {
       queryBuilder.andWhere('jobPost.status = :status', { status });
     }
-
     if (location) {
-      queryBuilder.andWhere('jobPost.location = :location', {
-        location,
-      });
+      queryBuilder.andWhere('jobPost.location = :location', { location });
     }
-
     if (search) {
-      queryBuilder.andWhere('jobPost.title ILIKE :search', { search });
+      queryBuilder.andWhere('jobPost.title ILIKE :search', { search: `%${search}%` });
     }
-
-    // Add radius search if radius is provided and user has a location
-    // if (radius && user.location) {
-    //   // Haversine formula for calculating distance
-    //   queryBuilder
-    //     .addSelect(
-    //       `(
-    //       6371 * acos(
-    //         cos(radians(:latitude)) * cos(radians(location.latitude)) *
-    //         cos(radians(location.longitude) - radians(:longitude)) +
-    //         sin(radians(:latitude)) * sin(radians(location.latitude))
-    //       )
-    //     )`,
-    //       'distance',
-    //     )
-    //     .having('distance <= :radius')
-    //     .setParameters({
-    //       latitude: user.location.latitude,
-    //       longitude: user.location.longitude,
-    //       radius,
-    //     })
-    //     .orderBy('distance', 'ASC');
-    // }
-
+  
     const [items, total] = await queryBuilder
       .orderBy(`jobPost.${sortBy}`, sortOrder)
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
-    // Check if the user has saved jobs
-    const appliedJobIds = user
-    ? await this.userJobRepository
-        .find({
+  
+    // Fetch applied & saved jobs for employees
+    const appliedJobIds = user && user.role === Role.Employee
+      ? await this.userJobRepository.find({
           where: { user: { id: user.id } },
           relations: ['jobPost'],
-        })
-        .then((appliedJobs) =>
-          appliedJobs.map((appliedJob) => appliedJob.jobPost.id),
-        )
-    : [];
-
-  // Check if the user has saved jobs
-  const savedJobIds = user
-    ? await this.savedJobRepository
-        .find({
+        }).then(appliedJobs => appliedJobs.map(appliedJob => appliedJob.jobPost.id))
+      : [];
+  
+    const savedJobIds = user && user.role === Role.Employee
+      ? await this.savedJobRepository.find({
           where: { user: { id: user.id } },
           relations: ['jobPost'],
-        })
-        .then((savedJobs) => savedJobs.map((savedJob) => savedJob.jobPost.id))
-    : [];
-
-  console.log('Applied Job IDs:', appliedJobIds);
-  console.log('Saved Job IDs:', savedJobIds);
-
-  const itemsWithStatuses = items.map((item) => {
-    const jobPostWithStatuses = new JobPost();
-    Object.assign(jobPostWithStatuses, item, {
-      isApplied: appliedJobIds.includes(item.id), // Add application status
-      isSaved: savedJobIds.includes(item.id), // Add saved status
+        }).then(savedJobs => savedJobs.map(savedJob => savedJob.jobPost.id))
+      : [];
+  
+    const itemsWithStatuses = items.map((item) => {
+      const jobPostWithStatuses = new JobPost();
+      Object.assign(jobPostWithStatuses, item, {
+        isApplied: appliedJobIds.includes(item.id),
+        isSaved: savedJobIds.includes(item.id),
+      });
+      return jobPostWithStatuses;
     });
-    return jobPostWithStatuses;
-  });
-
-  return {
-    items: itemsWithStatuses,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-}
+  
+    return {
+      items: itemsWithStatuses,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
   async findOne(id: number): Promise<JobPost> {
     const jobPost = await this.jobPostRepository.findOne({

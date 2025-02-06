@@ -67,7 +67,7 @@ export class UserController {
     type: UserResponseDto,
   })
   findOne(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
-    console.log(user, 'user', id);
+    // console.log(user, 'user', id);
     return this.userService.findOne(id, user);
   }
 
