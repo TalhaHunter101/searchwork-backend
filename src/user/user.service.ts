@@ -86,8 +86,7 @@ export class UserService {
     };
   }
 
-  async findOne(id: number, currentUser: User): Promise<User> {
-    // Users can view their own profile or admin can view any profile
+  async findOne(id: number, currentUser: User) {
     if (currentUser.id !== id && currentUser.role !== Role.Admin) {
       throw new UnauthorizedException('You can only view your own profile');
     }
@@ -97,12 +96,30 @@ export class UserService {
       relations: ['jobSeekerProfile', 'employerProfile', 'userPreferences'],
     });
 
-    console.log(user, 'user-----------', id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+  
+    const { otp, otpExpiresAt, platform_token, ...filteredUser } = user;
+    return filteredUser;
+  }
+  
+  async findOneByUserId(id: number, currentUser: User) {
+    if (currentUser.id !== id && currentUser.role !== Role.Admin) {
+      throw new UnauthorizedException('You can only view your own profile');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['jobSeekerProfile', 'employerProfile', 'userPreferences'],
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return user;
+  
+    const { otp, otpExpiresAt, platform_token, ...filteredUser } = user;
+    return {user: filteredUser};
   }
 
   async findOneByEmail(email: string): Promise<User | null> {

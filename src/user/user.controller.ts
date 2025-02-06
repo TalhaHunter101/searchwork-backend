@@ -68,7 +68,7 @@ export class UserController {
   })
   findOne(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
     // console.log(user, 'user', id);
-    return this.userService.findOne(id, user);
+    return this.userService.findOneByUserId(id, user);
   }
 
   @Delete(':id')
