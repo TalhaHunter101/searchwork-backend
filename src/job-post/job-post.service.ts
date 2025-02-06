@@ -180,7 +180,7 @@ export class JobPostService {
   async findOne(id: number): Promise<JobPost> {
     const jobPost = await this.jobPostRepository.findOne({
       where: { id },
-      relations: ['employer', 'employer.user'],
+      relations: ['employer', 'employer.user', 'employer.user.userPreferences'],
     });
 
     if (!jobPost) {
