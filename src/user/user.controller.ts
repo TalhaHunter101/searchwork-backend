@@ -71,21 +71,6 @@ export class UserController {
     return this.userService.findOne(id, user);
   }
 
-  // @Patch('profile')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiOperation({ summary: 'Update user profile' })
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description: 'Profile updated successfully',
-  //   type: UserResponseDto,
-  // })
-  // updateUserProfile(
-  //   @Body(ValidationPipe) updateUserDto: UpdateUserProfile,
-  //   @GetUser() user: User,
-  // ) {
-  //   return this.userService.updateUserProfile(user.id, updateUserDto);
-  // }
-
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)

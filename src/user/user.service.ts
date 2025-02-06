@@ -86,21 +86,23 @@ export class UserService {
     };
   }
 
-  async findOne(id: number, currentUser: User) {
+  async findOne(id: number, currentUser: User): Promise<User> {
     // Users can view their own profile or admin can view any profile
     if (currentUser.id !== id && currentUser.role !== Role.Admin) {
       throw new UnauthorizedException('You can only view your own profile');
     }
 
-    const userData = await this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id },
       relations: ['jobSeekerProfile', 'employerProfile', 'userPreferences'],
     });
 
-    if (!userData) {
+    console.log(user, 'user-----------', id);
+
+    if (!user) {
       throw new NotFoundException('User not found');
     }
-    return {user: userData};
+    return user;
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
@@ -109,32 +111,6 @@ export class UserService {
       relations: ['jobSeekerProfile', 'employerProfile'],
     });
   }
-
-  // async updateUserProfile(
-  //   id: number,
-  //   updateUserDto: UpdateUserProfile,
-  // ): Promise<User> {
-  //   const user = await this.userRepository.findOne({
-  //     where: { id },
-  //     relations: ['jobSeekerProfile', 'employerProfile'],
-  //   });
-
-  //   if (!user) {
-  //     throw new NotFoundException('User not found');
-  //   }
-
-  //   if (
-  //     updateUserDto.email &&
-  //     updateUserDto.email !== user.email &&
-  //     (await this.findOneByEmail(updateUserDto.email))
-  //   ) {
-  //     throw new ConflictException('Email already exists');
-  //   }
-
-  //   Object.assign(user, updateUserDto);
-  //   return await this.userRepository.save(user);
-  // }
-
 
   async updateProfile(
     user: User,
