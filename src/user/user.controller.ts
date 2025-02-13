@@ -20,7 +20,7 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { UpdateUserProfile } from './dto/update-user.dto';
+import { UpdateUserProfile } from './dto/update-profile.dto';
 import { UserFilterDto } from './dto/user-filter.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
